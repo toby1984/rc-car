@@ -1,7 +1,7 @@
 INCLUDE_DIR = /home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include
 LIB_DIR = 
 
-OBJECTS = tvremote.o
+OBJECTS = tvremote.o uart.o
 
 COMPILE = avr-gcc
 
@@ -11,7 +11,7 @@ all: main.hex
 	$(COMPILE) -DF_CPU=8000000 -mmcu=atmega88  -Wall -Os -Wno-main -I $(INCLUDE_DIR) -c $< -o $@
 
 main.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=8000000 -mmcu=atmega88  -Wall -Os -Wno-main -I $(INCLUDE_DIR) -o main.elf $(OBJECTS)
+	$(COMPILE) -DF_CPU=8000000 -mmcu=atmega88  -ffunction-sections -Wl,-gc -Wall -Os -Wno-main -I $(INCLUDE_DIR) -o main.elf $(OBJECTS)
 
 main.hex: main.elf
 	rm -f main.hex
