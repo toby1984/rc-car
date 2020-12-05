@@ -180,7 +180,8 @@ void irq_setup() {
 }
 
 #define MAX_IR_BITS 48
-uint16_t ir_rec_buffer[MAX_IR_BITS];
+uint16_t ir_rec_high[MAX_IR_BITS];
+uint16_t ir_rec_low[MAX_IR_BITS];
 
 // invoked at start of IR transmission (PD6 falling edge)
 ISR(INT1_vect) {
@@ -188,7 +189,15 @@ ISR(INT1_vect) {
   uint8_t bitCount = 0;
   while(1) { 
     // Wait for PD6 to become HIGH again    
-    loop_until_bit_is_set(PIND, IR_IN);
+    // NOTE: Signal from IR sensor is inverted to LOW input 
+    //       is logical HIGH
+    counter = 65535;
+    while ( !(PIND & _BV(IR_IN)) && --counter > 0) {    
+    }
+    if ( counter == 0 ) {
+      break;
+    }      
+    ir_rec_high[bitCount] = 65535-counter;
     // pin is high, start counting while waiting for pin to go low again
     counter = 65535;
     while ( PIND & _BV(IR_IN) && --counter > 0) {    
@@ -196,7 +205,7 @@ ISR(INT1_vect) {
     if ( counter == 0 ) {
       break;
     }    
-    ir_rec_buffer[bitCount++] = 65535-counter;
+    ir_rec_low[bitCount++] = 65535-counter;
     if ( bitCount == MAX_IR_BITS ) {
       break;
     }
@@ -208,8 +217,10 @@ ISR(INT1_vect) {
         uart_print("bit ");
         uart_putdecimal( i );
         uart_print(": ");        
-        uart_putdecimal( ir_rec_buffer[i] );
-        uart_print("\r\n");
+        uart_putdecimal( ir_rec_high[i] );
+        uart_print(" HIGH, ");  
+        uart_putdecimal( ir_rec_low[i] );
+        uart_print(" LOW\r\n");
    }
   }
 }

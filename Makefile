@@ -1,7 +1,7 @@
 INCLUDE_DIR = /home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include
 LIB_DIR = 
 
-OBJECTS = blink.o
+OBJECTS = tvremote.o
 
 COMPILE = avr-gcc
 
