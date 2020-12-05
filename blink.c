@@ -1,10 +1,14 @@
 // #define __AVR_ATmega88PB__
 #include <avr/io.h>
+#include <stdlib.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
-#define DEBUG_PIN (1<<5) // PB5
-#define MOTOR_LEFT (1<<4) // PB4
-#define MOTOR_RIGHT (1<<3) // PB3
+#define DEBUG_PIN _BV(5) // PB5
+#define MOTOR_LEFT _BV(4) // PB4
+#define MOTOR_RIGHT _BV(3) // PB3
+#define IR_IN 6 // PD6
+
 #define BAUD 19200
 
 #include <util/setbaud.h>
@@ -158,6 +162,58 @@ void motor_loop() {
   }
 }
 
+char buffer[10];
+
+void uart_putdecimal(uint16_t value) {
+
+  utoa(value & 0xffff,buffer,10);
+  uart_print(buffer);
+}
+
+void irq_setup() {
+  cli();
+  // let INT1 be triggered by falling edge,
+  // which marks the beginning of an IR transmission
+  EICRA = (EICRA & ~(_BV(ISC11) | _BV(ISC10))) | _BV(ISC11);
+  EIMSK |= _BV(INT1);
+  sei();
+}
+
+#define MAX_IR_BITS 48
+uint16_t ir_rec_buffer[MAX_IR_BITS];
+
+// invoked at start of IR transmission (PD6 falling edge)
+ISR(INT1_vect) {
+  uint16_t counter;
+  uint8_t bitCount = 0;
+  while(1) { 
+    // Wait for PD6 to become HIGH again    
+    loop_until_bit_is_set(PIND, IR_IN);
+    // pin is high, start counting while waiting for pin to go low again
+    counter = 65535;
+    while ( PIND & _BV(IR_IN) && --counter > 0) {    
+    }
+    if ( counter == 0 ) {
+      break;
+    }    
+    ir_rec_buffer[bitCount++] = 65535-counter;
+    if ( bitCount == MAX_IR_BITS ) {
+      break;
+    }
+  }
+
+  if ( bitCount > 0 ) {
+   uart_print("\r\n-------------\r\n");
+   for ( uint8_t i = 0 ; i < bitCount ; i++ ) {
+        uart_print("bit ");
+        uart_putdecimal( i );
+        uart_print(": ");        
+        uart_putdecimal( ir_rec_buffer[i] );
+        uart_print("\r\n");
+   }
+  }
+}
+
 void main() {
 
   DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
@@ -165,6 +221,7 @@ void main() {
 
   uart_init();
   motor_init();
+  irq_setup();
 
   leftDirection = STOP;
   rightDirection = STOP;
