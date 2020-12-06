@@ -18,12 +18,14 @@
 #define IR_KEY_RIGHT 0x00ff7887
 #define IR_KEY_STOP 0x00ff02fd
 
-#define CYCLES_PER_MS (F_CPU/1000.0)
-#define HALF_MS 0.5*CYCLES_PER_MS
+#define RIGHT_MOTOR_SPD_ADJUST_FWD 0.87
+#define RIGHT_MOTOR_SPD_ADJUST_BWD 0.75
 
 enum direction {
 	FORWARD,BACKWARD,STOP
 };
+
+volatile uint8_t is_moving;
 
 enum direction leftDirection;
 enum direction rightDirection;
@@ -34,6 +36,8 @@ uint16_t dutyLeftMillis;
 uint16_t dutyRightMillis;
 
 #define ICR1_VALUE 19999 // 50 hz at prescaler = F_CPU/8
+
+void motor_speed_changed();
 
 void start_pwm() {
 
@@ -48,19 +52,9 @@ void start_pwm() {
 	DDRB |= 1<<1 | 1<<2; // PB1 (OCR1A) and PB2 (OCR1B)
 }
 
-void motor_speed_changed() {
-
-#ifdef DEBUG
-	uart_print("\r\nDuty cycles: left = ");
-	uart_putdecimal(dutyLeftMillis);
-	uart_print(" , right = ");
-	uart_putdecimal(dutyRightMillis);	
-#endif
-	OCR1A = ICR1_VALUE - dutyLeftMillis; //18000
-	OCR1B = ICR1_VALUE - dutyRightMillis; //18000	
-}
-
 void motor_init() {
+
+    is_moving = 0;
 
 	leftDirection = STOP;
 	rightDirection = STOP;
@@ -93,7 +87,7 @@ void change_direction(char newDir) {
 		case 's':
 			if ( leftDirection == FORWARD && rightDirection == FORWARD) {
 				leftDirection = STOP;
-				rightDirection = STOP;     			
+				rightDirection = STOP;    				 			
 			} else {
 				leftDirection = BACKWARD;
 				rightDirection = BACKWARD;  
@@ -110,6 +104,7 @@ void change_direction(char newDir) {
 	}
 
 	if ( oldLeft != leftDirection || oldRight != rightDirection ) {
+		is_moving = leftDirection != STOP || rightDirection != STOP;
 		switch(leftDirection) {
 			case FORWARD:
 				dutyLeftMillis = 1000; // 1ms high pulse
@@ -123,17 +118,29 @@ void change_direction(char newDir) {
 	     }
 	 	switch(rightDirection) {
 	 		case FORWARD:
-	 			dutyRightMillis = 2000;
+	 			dutyRightMillis = 2000*RIGHT_MOTOR_SPD_ADJUST_FWD;
 	     		break; 
 	 		case STOP:
 	     		dutyRightMillis = 0;
 	     		break;
 	 		case BACKWARD:
-	     		dutyRightMillis = 1000;
+	     		dutyRightMillis = 1000*RIGHT_MOTOR_SPD_ADJUST_BWD;
 	     		break; 
 	 	}
 	 	motor_speed_changed();
  	}
+}
+
+void motor_speed_changed() {
+
+#ifdef DEBUG
+	uart_print("\r\nDuty cycles: left = ");
+	uart_putdecimal(dutyLeftMillis);
+	uart_print(" , right = ");
+	uart_putdecimal(dutyRightMillis);	
+#endif
+	OCR1A = ICR1_VALUE - dutyLeftMillis; //18000
+	OCR1B = ICR1_VALUE - dutyRightMillis; //18000	
 }
 
 void ir_init() {
@@ -298,6 +305,8 @@ void main() {
 	DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
 	DDRD = 1<<5;
 
+	DDRC = (1<<2) || (1<<3);
+
 #if defined(DEBUG) || defined(DEBUG_IR)
 	uart_init();
 #endif	
@@ -309,5 +318,15 @@ void main() {
 #endif	
 
 	while( 1 ) {	
+		if ( is_moving ) {
+			PORTC = (PORTC & ~_BV(2)) | _BV(3);
+			_delay_ms(250);
+            PORTC = (PORTC & ~_BV(3)) | _BV(2);			
+            _delay_ms(250);
+		} else {
+			PORTC = 0;
+			while ( ! is_moving ) {				
+			}
+		}
 	}
 }
