@@ -3,6 +3,8 @@ This is a fun little arduino project I build for my 3yo where you control a litt
 
 Since I like to find-out stuff all by myself, I didn't use any ready-made Arduino libraries nor Arduino IDE (but I did use some of the include files) but instead relied on make, avr-gcc and sublime text edit.
 
+![car](https://raw.githubusercontent.com/toby1984/tvremote-car/main/screenshot.png)
+
 Software used
 
 * avr-gcc 
