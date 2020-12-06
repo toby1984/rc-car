@@ -5,7 +5,7 @@
 #include <avr/interrupt.h>
 #include "uart.h"
 
-// #define DEBUG
+#define DEBUG
 // #define DEBUG_IR
 #define DEBUG_PIN _BV(5) // PB5
 #define MOTOR_LEFT _BV(4) // PB4
@@ -25,95 +25,56 @@ enum direction {
 	FORWARD,BACKWARD,STOP
 };
 
-#define MOTOR_LOOP_COUNT 40
-
 enum direction leftDirection;
 enum direction rightDirection;
 
-// current loop iteration count (counts down to zero and then reset to LOOP_COUNT)
-uint8_t currentLoopCount;
+// duty cycle in milliseconds, left motor
+uint16_t dutyLeftMillis;
+// duty cycle in milliseconds, right motor
+uint16_t dutyRightMillis;
 
-// length of high pulse in terms of loop iterations (left motor)
-uint8_t leftCycles;
-// length of high pulse in terms of loop iterations (right motor)
-uint8_t rightCycles;
+#define ICR1_VALUE 19999 // 50 hz at prescaler = F_CPU/8
+
+void start_pwm() {
+
+    TCCR1A |= 1<<WGM11 | 1<<COM1A1 | 1<<COM1A0 | 1<<COM1B1 | 1<<COM1B0;
+    TCCR1B |= 1<<WGM13 | 1<<WGM12 | 1<<CS11; // prescaler = 1/8
+
+	ICR1 = ICR1_VALUE; // 50 hz at prescaler = F_CPU/8
+
+	OCR1A = ICR1_VALUE - dutyLeftMillis; 
+	OCR1B = ICR1_VALUE - dutyRightMillis;
+
+	DDRB |= 1<<1 | 1<<2; // PB1 (OCR1A) and PB2 (OCR1B)
+}
+
+void motor_speed_changed() {
+
+#ifdef DEBUG
+	uart_print("\r\nDuty cycles: left = ");
+	uart_putdecimal(dutyLeftMillis);
+	uart_print(" , right = ");
+	uart_putdecimal(dutyRightMillis);	
+#endif
+	OCR1A = ICR1_VALUE - dutyLeftMillis; //18000
+	OCR1B = ICR1_VALUE - dutyRightMillis; //18000	
+}
 
 void motor_init() {
 
 	leftDirection = STOP;
 	rightDirection = STOP;
 
-	currentLoopCount = 0;
-	leftCycles = 0;
-	rightCycles = 0;
-}
+	dutyLeftMillis = 0;
+	dutyRightMillis = 0;
 
-void motor_loop() {
-
-	uint8_t initial = PORTB;
-	uint8_t flags = initial;   
-
-	cli();
-	enum direction tmpLeftDir = leftDirection;
-	enum direction tmpRightDir = rightDirection;
-	sei();
-
-	if ( currentLoopCount <= 0 ) 
-	{
-		currentLoopCount = MOTOR_LOOP_COUNT;    
-
-		switch(tmpLeftDir) {
-			case FORWARD:
-			flags |= MOTOR_LEFT;       
-              	leftCycles = 2; // 1ms high pulse
-              	break; 
-              	case STOP:
-              	flags &= ~MOTOR_LEFT;
-              	leftCycles = 0; 
-              	break;
-              	case BACKWARD:
-              	flags |= MOTOR_LEFT;       
-         		leftCycles = 4; // 2 ms high pulse
-         		break; 
-         	}
-         	switch(tmpRightDir) {
-         		case FORWARD:
-         		flags |= MOTOR_RIGHT;  
-         		rightCycles = 4; 
-         		break; 
-         		case STOP:
-         		flags &= ~MOTOR_RIGHT;
-         		rightCycles = 0; 
-         		break;
-         		case BACKWARD:
-         		flags |= MOTOR_RIGHT;        
-         		rightCycles = 2; 
-         		break; 
-         	}      
-         }
-         if ( leftCycles > 0 ) {
-         	leftCycles--;
-         	flags |= MOTOR_LEFT;
-         } else {
-         	flags &= ~MOTOR_LEFT;
-         }
-         if ( rightCycles > 0 ) {
-         	rightCycles--;
-         	flags |= MOTOR_RIGHT;
-         } else {
-         	flags &= ~MOTOR_RIGHT;
-         }   
-
-         if ( flags != initial ) {
-         	PORTB = (PORTB & ~(MOTOR_LEFT|MOTOR_RIGHT)) | flags;
-         }
-
-   _delay_loop_2(HALF_MS/4); // divide cycle count by four as _delay_loop2() takes 4 cycles per iteration
-
-   currentLoopCount--;
+	start_pwm();
 }
 
 void change_direction(char newDir) {
+
+    enum direction oldLeft = leftDirection;
+    enum direction oldRight = rightDirection;
 
 	switch( newDir ) {
 		case 'x':    
@@ -147,6 +108,32 @@ void change_direction(char newDir) {
 			rightDirection = BACKWARD;    
 		break;
 	}
+
+	if ( oldLeft != leftDirection || oldRight != rightDirection ) {
+		switch(leftDirection) {
+			case FORWARD:
+				dutyLeftMillis = 1000; // 1ms high pulse
+	          	break; 
+	      	case STOP:
+	      		dutyLeftMillis = 0;
+	          	break;
+	      	case BACKWARD:
+	      	    dutyLeftMillis = 2000; // 2 ms high pulse
+	     		break; 
+	     }
+	 	switch(rightDirection) {
+	 		case FORWARD:
+	 			dutyRightMillis = 2000;
+	     		break; 
+	 		case STOP:
+	     		dutyRightMillis = 0;
+	     		break;
+	 		case BACKWARD:
+	     		dutyRightMillis = 1000;
+	     		break; 
+	 	}
+	 	motor_speed_changed();
+ 	}
 }
 
 void ir_init() {
@@ -306,25 +293,10 @@ ISR(INT1_vect) {
 	}
 }
 
-void start_pwm() {
-
-    TCCR1A |= 1<<WGM11 | 1<<COM1A1 | 1<<COM1A0;
-    TCCR1B |= 1<<WGM13 | 1<<WGM12 | 1<<CS11; // prescaler = 1/8
-
-	ICR1 = 19999; // 50 hz at prescaler = F_CPU/8
-
-	OCR1A = ICR1 - 2000; //18000
-	OCR1B = ICR1 - 1000; //18000	
-	
-	DDRB |= 1<<1 | 1<<2; // PB1 (OCR1A) and PB2 (OC1B)
-}
-
 void main() {
 
 	DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
 	DDRD = 1<<5;
-
-	start_pwm();
 
 #if defined(DEBUG) || defined(DEBUG_IR)
 	uart_init();
@@ -332,17 +304,10 @@ void main() {
 	motor_init();
 	ir_init();
 
-	leftDirection = STOP;
-	rightDirection = STOP;
-
 #ifdef DEBUG
 	uart_print("online");
 #endif	
 
-	while( 1 ) {
-		motor_loop();
-		// if ( bit_is_set(UCSR0A, RXC0 ) ) {
-//			change_direction( UDR0 );
-		// }
+	while( 1 ) {	
 	}
 }
