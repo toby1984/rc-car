@@ -42,6 +42,15 @@ void uart_putdecimal(uint16_t value) {
 	uart_print(buffer);
 }
 
+void uart_putsdecimal(int8_t value) {
+
+	if ( value & (1<<7) ) {
+		uart_putchar('-');
+		value = ~value + 1;		
+	} 
+    uart_putdecimal(value);	
+}
+
 const char HEX[] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
 void uart_puthex(uint32_t value) {

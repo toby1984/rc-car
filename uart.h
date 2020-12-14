@@ -9,6 +9,7 @@ void uart_putchar(char c);
 void uart_print(char *c);
 char uart_getchar(void);
 void uart_putdecimal(uint16_t value);
+void uart_putsdecimal(int8_t value);
 void uart_puthex(uint32_t value);
 
 #endif
