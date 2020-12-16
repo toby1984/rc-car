@@ -1,5 +1,5 @@
-#ifndef SENDER_H
-#define SENDER_H
+#ifndef JOYSTICK_H
+#define JOYSTICK_H
 #include <stdint.h>
 
 typedef struct joystick_readings {

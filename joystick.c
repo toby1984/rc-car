@@ -1,4 +1,4 @@
-#include "sender.h"
+#include "joystick.h"
 #include <avr/io.h>
 #include <stdlib.h>
 

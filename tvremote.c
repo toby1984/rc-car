@@ -4,7 +4,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart.h"
-#include "sender.h"
+#include "joystick.h"
 
 #define DEBUG
 // #define DEBUG_IR
