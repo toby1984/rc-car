@@ -1,7 +1,6 @@
 #ifndef RADIO_RECEIVER_H
 #define RADIO_RECEIVER_H    
 
-#include <avr/io.h>
 #include <stdint.h>
 #include "radio_common.h"
 
