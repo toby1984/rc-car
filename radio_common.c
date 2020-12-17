@@ -2,12 +2,12 @@
 #include "radio_common.h"
 #include "avr/delay.h"
 
-void delay_short()
+void radio_delay_short(void)
 {
 	_delay_us(SHORT_MICROS);
 }
 
-void delay_long()
+void radio_delay_long(void)
 {
     _delay_us(LONG_MICROS);
 }

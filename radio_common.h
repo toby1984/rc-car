@@ -15,4 +15,7 @@
 #define LONG_LOW (uint16_t) (LONG_MICROS * 0.6f)
 #define LONG_HI (uint16_t) (LONG_MICROS * 1.4f)
 
+void radio_delay_short(void);
+void radio_delay_long(void);
+
 #endif
