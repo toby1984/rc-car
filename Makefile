@@ -11,7 +11,7 @@ CPU_FREQ=16000000
 
 AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = tvremote.o uart.o joystick.o crc.o radio_common.c radio_sender.o radio_receiver.o timer16.o
+OBJECTS = tvremote.o uart.o joystick.o crc.o radio_common.o radio_sender.o radio_receiver.o timer16.o
 
 COMPILE = avr-gcc
 
