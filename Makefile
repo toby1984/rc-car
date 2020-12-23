@@ -6,7 +6,7 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-SUBDIRS := common car remote
+SUBDIRS := common car remote test_receiver
 
 TOPTARGETS := all clean
 

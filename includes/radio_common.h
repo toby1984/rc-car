@@ -1,10 +1,8 @@
 #ifndef RADIO_COMMON_H
 #define RADIO_COMMON_H
 
-#define PREAMBLE_BYTES 2
-#define PAYLOAD_BYTES_PER_MESSAGE 3
-
-#define MSG_LEN PREAMBLE_BYTES+ PAYLOAD_BYTES_PER_MESSAGE;
+// size of message in bytes
+#define MSG_LEN 3
 
 #define SHORT_MICROS 3000
 #define LONG_MICROS SHORT_MICROS*2
