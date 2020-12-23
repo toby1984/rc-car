@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "radio_common.h"
 #include "radio_receiver.h"
+#include "timer16.h"
 
 void radio_receiver_init(void) {
 	// switch radio pin to input
@@ -29,7 +30,7 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
 
     // wait for start bit
     uint16_t elapsed;
-    while (true)
+    while (1)
     {
         while ( radio_read() != 0) ; // wait until signal goes low
         while ( radio_read() == 0) ; // wait while signal IS low
@@ -64,15 +65,15 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
     {
         currentByte |= currentBitMask;
     }
-    currentBitMask >>>= 1;
+    currentBitMask >>= 1;
 
-    while (true)
+    while (1)
     {
         uint16_t tsElapsed2 = radio_wait_for_edge();
-        final uint16_t delta = tsElapsed2;
+        uint16_t delta = tsElapsed2;
         if (fuzzyEquals(delta, SHORT_LOW, SHORT_HI))
         {
-            final uint16_t tsElapsed3 = radio_wait_for_edge();
+            uint16_t tsElapsed3 = radio_wait_for_edge();
             if ( ! fuzzyEquals(tsElapsed3, SHORT_LOW, SHORT_HI))
             {
                 return 0xfe;
@@ -94,7 +95,7 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
         {
             return 0xfd;
         }
-        currentBitMask >>>= 1;
+        currentBitMask >>= 1;
         if (currentBitMask == 0)
         {
             currentBitMask = 0x80;

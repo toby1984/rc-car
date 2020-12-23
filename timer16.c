@@ -10,10 +10,10 @@ inline void timer16_start() {
 }
 
 inline void timer16_reset() {
-    timerStop();
+    timer16_stop();
     TCNT1H = 0;
     TCNT1L = 0;    
-    timerStart();
+    timer16_start();
 }
 
 inline uint16_t timer16_elapsed() {
