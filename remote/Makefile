@@ -11,7 +11,7 @@ CPU_FREQ=16000000
 
 AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = joystick.o radio_sender.o remote.o
+OBJECTS = joystick.o remote.o
 
 COMPILE = avr-gcc
 
@@ -21,7 +21,7 @@ all: remote.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 remote.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o
 
 remote.hex: remote.elf
 	rm -f remote.hex

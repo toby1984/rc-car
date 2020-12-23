@@ -1,5 +1,4 @@
 INCLUDE_DIRS = -I/home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include -I../includes
-LIB_DIR = 
 
 # AVRCC_CHIP=atmega88
 # AVRDUDE_CHIP = m88p
@@ -11,27 +10,24 @@ CPU_FREQ=16000000
 
 AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = car.o radio_receiver.o timer16.o
+OBJECTS = test_receiver.o
 
 COMPILE = avr-gcc
 
-all: car.hex
+all: test_receiver.hex
 
 .c.o:
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
-car.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o car.elf $(OBJECTS) ../common/uart.o
+test_receiver.elf: $(OBJECTS)
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o test_receiver.elf $(OBJECTS) ../common/uart.o ../common/radio_receiver.o ../common/radio_common.o ../common/timer16.o
 
-car.hex: car.elf
-	rm -f car.hex
-	avr-objcopy -j .text -j .data -O ihex car.elf car.hex
+test_receiver.hex: test_receiver.elf
+	rm -f test_receiver.hex
+	avr-objcopy -j .text -j .data -O ihex test_receiver.elf test_receiver.hex
 
 clean:
-	rm -f car.hex car.elf $(OBJECTS)
+	rm -f test_receiver.hex test_receiver.elf $(OBJECTS)
 
-upload: car.hex
-	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U flash:w:car.hex
-
-readfuses:
-	/usr/bin/avrdude -F -V -c stk500v2 -P $(AVRDUDE_DEVICE) -b 115200 -p $(AVRDUDE_CHIP) -U lfuse:r:-:b
+upload: test_receiver.hex
+	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U flash:w:test_receiver.hex

@@ -9,7 +9,7 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-OBJECTS = crc.o radio_common.o uart.o
+OBJECTS = crc.o radio_common.o uart.o radio_sender.o timer16.o radio_receiver.o
 
 COMPILE = avr-gcc
 

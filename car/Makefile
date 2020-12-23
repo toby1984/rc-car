@@ -11,7 +11,7 @@ CPU_FREQ=16000000
 
 AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = car.o radio_receiver.o timer16.o
+OBJECTS = car.o
 
 COMPILE = avr-gcc
 
@@ -21,7 +21,7 @@ all: car.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 car.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o car.elf $(OBJECTS) ../common/uart.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o car.elf $(OBJECTS) ../common/uart.o ../common/timer16.o ../common/radio_receiver.o
 
 car.hex: car.elf
 	rm -f car.hex
