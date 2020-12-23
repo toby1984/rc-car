@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "radio_common.h"
-#include "avr/delay.h"
+#include "util/delay.h"
 
 void radio_delay_short(void)
 {

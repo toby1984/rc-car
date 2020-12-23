@@ -4,7 +4,6 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart.h"
-#include "joystick.h"
 
 #define DEBUG
 // #define DEBUG_IR
@@ -303,47 +302,32 @@ ISR(INT1_vect) {
 
 void main() {
 
-    joystick_readings joystick;
+ 	DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
+ 	DDRD = 1<<5;
 
-// 	DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
-// 	DDRD = 1<<5;
+ 	DDRC = (1<<2) || (1<<3);
 
-// 	DDRC = (1<<2) || (1<<3);
+  #if defined(DEBUG) || defined(DEBUG_IR)
+      uart_init();
+  #endif	
 
-//  #if defined(DEBUG) || defined(DEBUG_IR)
- 	uart_init();
-//  #endif	
+ 	motor_init();
+ 	ir_init();
 
- 	joystick_init();
+ #ifdef DEBUG
+ 	uart_print("online");
+ #endif	
 
-    uart_print("\r\nOK\r\n");
-    while(1) {
-      _delay_ms(250);
-      _delay_ms(250);    	
-      joystick_read(&joystick);
-      uart_print("\r\nX: ");
-      uart_putsdecimal(joystick.x);
-      uart_print(" : ");
-      uart_putsdecimal(joystick.y);      
-    }
-
-// 	motor_init();
-// 	ir_init();
-
-// #ifdef DEBUG
-// 	uart_print("online");
-// #endif	
-
-// 	while( 1 ) {	
-// 		if ( is_moving ) {
-// 			PORTC = (PORTC & ~_BV(2)) | _BV(3);
-// 			_delay_ms(250);
-//             PORTC = (PORTC & ~_BV(3)) | _BV(2);			
-//             _delay_ms(250);
-// 		} else {
-// 			PORTC = 0;
-// 			while ( ! is_moving ) {				
-// 			}
-// 		}
-// 	}
+ 	while( 1 ) {	
+ 		if ( is_moving ) {
+ 			PORTC = (PORTC & ~_BV(2)) | _BV(3);
+ 			_delay_ms(250);
+             PORTC = (PORTC & ~_BV(3)) | _BV(2);			
+             _delay_ms(250);
+ 		} else {
+ 			PORTC = 0;
+ 			while ( ! is_moving ) {				
+ 			}
+ 		}
+ 	}
 }
