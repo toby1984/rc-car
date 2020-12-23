@@ -9,7 +9,7 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-AVRDUDE_DEVICE = /dev/ttyACM1
+AVRDUDE_DEVICE = /dev/ttyACM0
 
 OBJECTS = joystick.o remote.o
 
@@ -21,7 +21,7 @@ all: remote.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 remote.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o ../common/uart.o
 
 remote.hex: remote.elf
 	rm -f remote.hex

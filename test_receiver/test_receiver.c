@@ -17,6 +17,8 @@ void main(void) {
 				uart_print(" : ");
 				uart_putsdecimal( buffer[i] );
 			}
+		} else {
+			uart_print("\r\nERROR");
 		}
 	}
 }

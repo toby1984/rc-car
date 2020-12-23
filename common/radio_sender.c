@@ -16,6 +16,14 @@ inline void radio_off() {
 
 void radio_send(uint8_t *data,uint8_t dataLen) {
 
+    // send training sequence
+    for ( uint8_t i = 0 ; i < TRAINING_BITS ; i++ ) {
+        radio_on();
+        radio_delay_short();
+        radio_off();
+        radio_delay_short();        
+    }
+
     // send start bit
     radio_on();
     radio_delay_long();
