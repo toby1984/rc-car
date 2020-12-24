@@ -11,7 +11,7 @@
 #define SHORT_MICROS 3000
 
 // length of a long pulse in microseconds
-#define LONG_MICROS SHORT_MICROS*2
+#define LONG_MICROS (SHORT_MICROS*2)
 
 // lo/hi thresholds for short pulses
 #define SHORT_LOW (uint16_t) (SHORT_MICROS * 0.6f)

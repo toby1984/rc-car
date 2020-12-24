@@ -3,6 +3,7 @@
 #include "crc.h"
 #include "util/delay.h"
 #include <avr/io.h>
+#include "uart.h"
 
 void main(void) 
 {
@@ -10,6 +11,7 @@ void main(void)
     uint8_t msg[3];
 
     joystick_init();
+    uart_init();
     radio_sender_init();
 
 	while(1) {

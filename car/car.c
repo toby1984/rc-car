@@ -328,7 +328,7 @@ void main() {
  			uart_print("\r\nRECEIVED ");
  			uart_putsdecimal(received);
  			uart_print(" bytes : ");
- 			uint32_t value = (uint32_t) msg[2] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[0];
+ 			uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
  			uart_puthex( value );
  		} else {
  			uart_print("\r\nERROR ");
