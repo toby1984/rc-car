@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "radio_common.h"
 
-#define RADIO_OUT_PIN 8
+#define RADIO_OUT_PIN 2
 #define RADIO_OUT_DDR_REG DDRD
 #define RADIO_OUT_REG PORTD
 

@@ -4,14 +4,15 @@
 #include "radio_sender.h"
 
 void radio_sender_init(void) {
+    RADIO_OUT_DDR_REG |= (1<<RADIO_OUT_PIN);
 }
 
-inline void radio_on() {
-    RADIO_OUT_REG |= _BV(RADIO_OUT_PIN);    
+void radio_on() {
+    RADIO_OUT_REG |= (1<<RADIO_OUT_PIN);    
 }
 
-inline void radio_off() {
-    RADIO_OUT_REG &= ~_BV(RADIO_OUT_PIN);          
+void radio_off() {
+    RADIO_OUT_REG &= ~(1<<RADIO_OUT_PIN);          
 }
 
 void radio_send(uint8_t *data,uint8_t dataLen) {

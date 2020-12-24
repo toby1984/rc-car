@@ -8,7 +8,7 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-AVRDUDE_DEVICE = /dev/ttyACM1
+AVRDUDE_DEVICE = /dev/ttyACM0
 
 OBJECTS = test_receiver.o
 
