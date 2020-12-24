@@ -22,7 +22,7 @@ uint16_t radio_wait_for_edge() {
     return timer16_elapsed();
 }    
 
-uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
+int8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
 {
     uint8_t currentByte = 0;
     uint8_t currentByteIdx = 0;
@@ -58,7 +58,7 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
     }
     else
     {
-        return 0xff;
+        return -1;
     }
 
     if (currentBit)
@@ -76,7 +76,7 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
             uint16_t tsElapsed3 = radio_wait_for_edge();
             if ( ! fuzzyEquals(tsElapsed3, SHORT_LOW, SHORT_HI))
             {
-                return 0xfe;
+                return -2;
             }
             if (currentBit)
             {
@@ -93,7 +93,7 @@ uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
         }
         else
         {
-            return 0xfd;
+            return -3;
         }
         currentBitMask >>= 1;
         if (currentBitMask == 0)

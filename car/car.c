@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include "radio_receiver.h"
 #include "uart.h"
 
 #define DEBUG
@@ -302,32 +303,49 @@ ISR(INT1_vect) {
 
 void main() {
 
- 	DDRB = MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN;
- 	DDRD = 1<<5;
+	uint8_t msg[3];
 
- 	DDRC = (1<<2) || (1<<3);
+ 	DDRB |= (MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN);
+ 	DDRD |= 1<<5;
+
+ 	DDRC |= (1<<2) | (1<<3);
 
   #if defined(DEBUG) || defined(DEBUG_IR)
       uart_init();
   #endif	
 
  	motor_init();
- 	ir_init();
+ 	radio_receiver_init();
+ 	// ir_init();
 
  #ifdef DEBUG
  	uart_print("online");
  #endif	
 
- 	while( 1 ) {	
- 		if ( is_moving ) {
- 			PORTC = (PORTC & ~_BV(2)) | _BV(3);
- 			_delay_ms(250);
-             PORTC = (PORTC & ~_BV(3)) | _BV(2);			
-             _delay_ms(250);
+ 	while (1) {
+ 		int8_t received = radio_receive(&msg[0],3);
+ 		if ( received > 0 ) {
+ 			uart_print("\r\nRECEIVED ");
+ 			uart_putsdecimal(received);
+ 			uart_print(" bytes : ");
+ 			uint32_t value = (uint32_t) msg[2] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[0];
+ 			uart_puthex( value );
  		} else {
- 			PORTC = 0;
- 			while ( ! is_moving ) {				
- 			}
+ 			uart_print("\r\nERROR ");
+ 			uart_putsdecimal(received);
  		}
  	}
+
+ 	// while( 1 ) {	
+ 	// 	if ( is_moving ) {
+ 	// 		PORTC = (PORTC & ~_BV(2)) | _BV(3);
+ 	// 		_delay_ms(250);
+  //            PORTC = (PORTC & ~_BV(3)) | _BV(2);			
+  //            _delay_ms(250);
+ 	// 	} else {
+ 	// 		PORTC = 0;
+ 	// 		while ( ! is_moving ) {				
+ 	// 		}
+ 	// 	}
+ 	// }
 }

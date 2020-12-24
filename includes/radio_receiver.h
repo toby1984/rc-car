@@ -12,6 +12,6 @@
 
 void radio_receiver_init(void);
 
-uint8_t radio_receive(uint8_t *buffer, uint8_t msgSize);
+int8_t radio_receive(uint8_t *buffer, uint8_t msgSize);
 
 #endif
