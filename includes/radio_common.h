@@ -8,7 +8,7 @@
 #define MSG_LEN 3
 
 // length of a short pulse in microseconds
-#define SHORT_MICROS 3000
+#define SHORT_MICROS 1000
 
 // length of a long pulse in microseconds
 #define LONG_MICROS (SHORT_MICROS*2)
