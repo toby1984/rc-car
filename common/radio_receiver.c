@@ -3,6 +3,7 @@
 #include "radio_common.h"
 #include "radio_receiver.h"
 #include "timer16.h"
+#include "uart.h"
 
 void radio_receiver_init(void) {
 	// switch radio pin to input
@@ -15,8 +16,8 @@ inline uint8_t radio_read()
 }    
 
 uint16_t radio_wait_for_edge() {
-    timer16_reset();
-    uint8_t current = radio_read();
+    uint8_t current = radio_read();    
+    timer16_reset();    
     // TODO: Bail out if waiting too long
     while ( radio_read() == current );
     return timer16_elapsed();
@@ -27,45 +28,26 @@ int8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
     uint8_t currentByte = 0;
     uint8_t currentByteIdx = 0;
     uint8_t currentBitMask = 0x80;
+    uint8_t currentBit = 0;
 
     // wait for start bit
     uint16_t elapsed;
     while (1)
     {
-        while ( radio_read() != 0) ; // wait until signal goes low
-        while ( radio_read() == 0) ; // wait while signal IS low
-        timer16_reset();
-        while ( radio_read() != 0 ) ;  // wait while signal is high
-        // signal is low again
-        elapsed = timer16_elapsed();
+        elapsed = radio_wait_for_edge();
         if (fuzzyEquals(elapsed, LONG_LOW, LONG_HI))
         {
+            if ( radio_read() ) {
+                currentBit = 1;
+                currentByte |= currentBitMask;
+            }
             break;
         }
     }
 
-    // now wait for 1st bit to arrive
-    uint16_t tsElapsed = radio_wait_for_edge();
-
-    uint8_t currentBit;
-    if ( fuzzyEquals(tsElapsed, SHORT_LOW, SHORT_HI) )
-    {
-        currentBit = 0;
-    }
-    else if ( fuzzyEquals(tsElapsed, LONG_LOW, LONG_HI) )
-    {
-        currentBit = 1;
-    }
-    else
-    {
-        return -1;
-    }
-
-    if (currentBit)
-    {
-        currentByte |= currentBitMask;
-    }
     currentBitMask >>= 1;
+
+    // radio_wait_for_edge();
 
     while (1)
     {

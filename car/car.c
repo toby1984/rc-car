@@ -5,6 +5,7 @@
 #include <avr/interrupt.h>
 #include "radio_receiver.h"
 #include "uart.h"
+#include "crc.h"
 
 #define DEBUG
 // #define DEBUG_IR
@@ -324,15 +325,10 @@ void main() {
 
  	while (1) {
  		int8_t received = radio_receive(&msg[0],3);
- 		if ( received > 0 ) {
- 			uart_print("\r\nRECEIVED ");
- 			uart_putsdecimal(received);
- 			uart_print(" bytes : ");
+ 		if ( received == 3 && crc8(&msg[0],3) == 0 ) {
+ 			uart_print("\r\nreceived : ");
  			uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
  			uart_puthex( value );
- 		} else {
- 			uart_print("\r\nERROR ");
- 			uart_putsdecimal(received);
  		}
  	}
 

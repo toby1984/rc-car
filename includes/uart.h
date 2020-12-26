@@ -1,7 +1,7 @@
 #ifndef UART_H
 #define UART_H
 
-#define BAUD 19200
+#define BAUD 38400
 #include <util/setbaud.h>
 
 void uart_init(void);
