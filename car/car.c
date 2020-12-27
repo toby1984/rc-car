@@ -323,9 +323,11 @@ void main() {
  	uart_print("online");
  #endif	
 
+    uint8_t received_count = 0;
  	while (1) {
  		int8_t received = radio_receive(&msg[0],3);
- 		if ( received == 3 && crc8(&msg[0],3) == 0 ) {
+ 		if ( received == 3 && crc8(&msg[0],3) == 0 && ++received_count == 4 ) {
+ 			received_count = 0;
  			uart_print("\r\nreceived : ");
  			uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
  			uart_puthex( value );
