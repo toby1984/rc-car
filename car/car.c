@@ -12,6 +12,10 @@
 #define DEBUG_PIN _BV(5) // PB5
 #define MOTOR_LEFT _BV(4) // PB4
 #define MOTOR_RIGHT _BV(3) // PB3
+
+#define MOTOR_LEFT_DIR _BV(6) // PD6
+#define MOTOR_RIGHT_DIR _BV(7) // PD7
+
 #define IR_IN 6 // PD6
 
 #define IR_KEY_FORWARD 0x00ffa05f
@@ -56,6 +60,8 @@ void start_pwm() {
 
 void motor_init() {
 
+    DDRD |= (MOTOR_LEFT_DIR | MOTOR_RIGHT_DIR);
+    
     is_moving = 0;
 
 	leftDirection = STOP;
