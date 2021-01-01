@@ -11,14 +11,11 @@
 
 #define DEBUG_PIN _BV(5) // PB5
 
-#define MOTOR_LEFT _BV(4) // PB4
-#define MOTOR_RIGHT _BV(3) // PB3
-
-#define MOTOR_LEFT_DIR _BV(6) // PD6
+#define MOTOR_LEFT_DIR _BV(4)
 #define MOTOR_LEFT_DIR_DDR DDRD
 #define MOTOR_LEFT_DIR_REG PORTD
 
-#define MOTOR_RIGHT_DIR _BV(7) // PD7
+#define MOTOR_RIGHT_DIR _BV(3)
 #define MOTOR_RIGHT_DIR_DDR DDRD
 #define MOTOR_RIGHT_DIR_REG PORTD
 
@@ -33,18 +30,6 @@ enum direction {
 
 uint8_t car_stopped;
 
-void setup_pwm() {
-
-    // phase-correct PWM mode, 0CR0A defines TOP
-    TCCR0A |= 1<<WGM00 | 1<<COM0A1 | 1<<COM0B1;
-    TCCR0B |= 1<<CS00; // CPU_FREQ / 1
-
-	OCR0A = (0xff/2);
-	OCR0B = (0xff/2);
-
-	DDRD |= (1<<6 | 1<<5); // PD6 (OCR0A) and PD5 (OCR0B)
-}
-
 void motor_init() {
 
     MOTOR_LEFT_DIR_DDR |= MOTOR_LEFT_DIR;
@@ -52,15 +37,25 @@ void motor_init() {
     
 	car_stopped = 1;
     
-	setup_pwm();
+	DDRD |= (1<<6 | 1<<5); // PD6 (OCR0A) and PD5 (OCR0B)
 }
 
 void motor_stop() {
+#ifdef DEBUG
+	uart_print("\r\nmotor stopped");
+#endif
+
     TCCR0B &= ~(1<<CS02|1<<CS01|1<<CS00);
+    TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
+  
+	PORTD &= ~(1<<5|1<<6);
+
     car_stopped = 1;
 }
 
 void motor_start() {
+    // phase-correct PWM mode, 0CR0A defines TOP
+    TCCR0A |= 1<<WGM00 | 1<<COM0A1 | 1<<COM0B1;	
 	TCCR0B |= 1<<CS00; // CPU_FREQ / 8
 	car_stopped = 0;
 }
@@ -108,8 +103,6 @@ void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t 
 void main() {
 
 	uint8_t msg[3];
-
- 	DDRB |= (MOTOR_LEFT | MOTOR_RIGHT | DEBUG_PIN);
 
  	DDRC |= (1<<2) | (1<<3);
 
