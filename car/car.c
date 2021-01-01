@@ -27,8 +27,6 @@
 // this ultimately defines how fast you're able to turn when not stationary
 #define MAX_MOTOR_SPEED_DIFF 0.2
 
-#define ICR0_VALUE 80 // 25kHz hz at 16Mhz CPU freq and prescaler 8
-
 enum direction {
 	FORWARD,BACKWARD,STOP
 };
@@ -37,15 +35,14 @@ uint8_t car_stopped;
 
 void setup_pwm() {
 
-    TCCR0A |= 1<<WGM01 | 1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0;
-    TCCR0B |= 1<<WGM03 | 1<<WGM02 | 1<<CS01; // CPU_FREQ / 8
+    // phase-correct PWM mode, 0CR0A defines TOP
+    TCCR0A |= 1<<WGM00 | 1<<COM0A1 | 1<<COM0B1;
+    TCCR0B |= 1<<CS00; // CPU_FREQ / 1
 
-	ICR0 = ICR0_VALUE; 
+	OCR0A = (0xff/2);
+	OCR0B = (0xff/2);
 
-	OCR0A = ICR0_VALUE;
-	OCR0B = ICR0_VALUE;
-
-	DDRD |= 1<<6 | 1<<5; // PD6 (OCR0A) and PD5 (OCR0B)
+	DDRD |= (1<<6 | 1<<5); // PD6 (OCR0A) and PD5 (OCR0B)
 }
 
 void motor_init() {
@@ -54,7 +51,7 @@ void motor_init() {
     MOTOR_RIGHT_DIR_DDR |= MOTOR_RIGHT_DIR;
     
 	car_stopped = 1;
-
+    
 	setup_pwm();
 }
 
@@ -64,18 +61,11 @@ void motor_stop() {
 }
 
 void motor_start() {
-	TCCR0B |= 1<<CS01; // CPU_FREQ / 8
+	TCCR0B |= 1<<CS00; // CPU_FREQ / 8
 	car_stopped = 0;
 }
 
 void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t newDutyLeft, uint8_t newDutyRight) {
-
-#ifdef DEBUG
-	uart_print("\r\nSpeed %: left = ");
-	uart_putdecimal(dutyLeft);
-	uart_print(" , right = ");
-	uart_putdecimal(dutyRight);	
-#endif
 
     if ( newLeftDir == STOP || newRightDir == STOP ) {
     	motor_stop();
@@ -94,9 +84,25 @@ void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t 
 			MOTOR_RIGHT_DIR_REG &= ~MOTOR_RIGHT_DIR;
     	}    	
 
-		OCR0A = (ICR0_VALUE * newDutyLeft)/100.0;
-		OCR0B = (ICR0_VALUE * newDutyRight)/100.0;
-    }
+    	uint8_t pwm0 = (0xff * newDutyLeft)/100.0;
+    	uint8_t pwm1 = (0xff * newDutyRight)/100.0;    	
+
+		OCR0A = pwm0;
+		OCR0B = pwm1;
+
+#ifdef DEBUG
+	uart_print("\r\nSpeed %: left = ");
+	uart_putdecimal(newDutyLeft);
+	uart_print(" (");	
+	uart_putdecimal(pwm0);
+	uart_print(") , right = ");
+	uart_putdecimal(newDutyRight);	
+	uart_print(" (");		
+	uart_putdecimal(pwm1);	
+	uart_print(")");			
+#endif
+
+	}
 }
 
 void main() {
@@ -128,6 +134,20 @@ void main() {
 
  			int8_t xDir = msg[0];
  			int8_t yDir = msg[1];
+ 			uart_print("(");
+ 			uart_putsdecimal(xDir);
+ 			uart_print("/");
+ 			uart_putsdecimal(yDir);
+ 			uart_print(")");
+
+ 			// TODO: Fix sender to not send values > 100
+ 			if ( xDir < -100 ) {
+ 				xDir = -100;
+ 			}
+ 			if ( yDir < -100 ) {
+ 				yDir = -100;
+ 			}
+
  			if ( yDir == 0 ) {
  				if ( xDir == 0 ) {
  					// full stop
