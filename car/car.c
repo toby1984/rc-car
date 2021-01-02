@@ -28,6 +28,9 @@ enum direction {
 	FORWARD,BACKWARD,STOP
 };
 
+enum direction leftDir;
+enum direction rightDir;
+
 uint8_t car_stopped;
 
 void motor_init() {
@@ -38,6 +41,9 @@ void motor_init() {
 	car_stopped = 1;
     
 	DDRD |= (1<<6 | 1<<5); // PD6 (OCR0A) and PD5 (OCR0B)
+
+	leftDir = FORWARD;
+	rightDir = FORWARD;
 }
 
 void motor_stop() {
@@ -68,16 +74,22 @@ void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t 
     	if ( car_stopped ) {
     		motor_start();
     	}
-    	if ( newLeftDir == FORWARD ) {
-    		MOTOR_LEFT_DIR_REG |= MOTOR_LEFT_DIR;
-    	} else {
-			MOTOR_LEFT_DIR_REG &= ~MOTOR_LEFT_DIR;
+    	if ( newLeftDir != leftDir ) {
+	    	if ( newLeftDir == FORWARD ) {
+	    		MOTOR_LEFT_DIR_REG |= MOTOR_LEFT_DIR;
+	    	} else {
+				MOTOR_LEFT_DIR_REG &= ~MOTOR_LEFT_DIR;
+	    	}
+	    	leftDir = newLeftDir;
     	}
-    	if ( newRightDir == FORWARD ) {
-    		MOTOR_RIGHT_DIR_REG |= MOTOR_RIGHT_DIR;
-    	} else {
-			MOTOR_RIGHT_DIR_REG &= ~MOTOR_RIGHT_DIR;
-    	}    	
+    	if ( newRightDir != rightDir ) {
+	    	if ( newRightDir == FORWARD ) {
+	    		MOTOR_RIGHT_DIR_REG |= MOTOR_RIGHT_DIR;
+	    	} else {
+				MOTOR_RIGHT_DIR_REG &= ~MOTOR_RIGHT_DIR;
+	    	}    	
+	    	rightDir = newRightDir;
+    	}
 
     	uint8_t pwm0 = (0xff * newDutyLeft)/100.0;
     	uint8_t pwm1 = (0xff * newDutyRight)/100.0;    	
