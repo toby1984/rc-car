@@ -11,7 +11,7 @@
 
 #define DEBUG_PIN _BV(5) // PB5
 
-#define MOTOR_LEFT_DIR _BV(4)
+#define MOTOR_LEFT_DIR _BV(2)
 #define MOTOR_LEFT_DIR_DDR DDRD
 #define MOTOR_LEFT_DIR_REG PORTD
 
