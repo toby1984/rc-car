@@ -31,84 +31,76 @@ enum direction {
 enum direction leftDir;
 enum direction rightDir;
 
-uint8_t car_stopped;
-
 void motor_init() {
 
     MOTOR_LEFT_DIR_DDR |= MOTOR_LEFT_DIR;
     MOTOR_RIGHT_DIR_DDR |= MOTOR_RIGHT_DIR;
-    
-	car_stopped = 1;
-    
-	DDRD |= (1<<6 | 1<<5); // PD6 (OCR0A) and PD5 (OCR0B)
+        
+    // enable output pins for 
+    // left motor (OC0A = PD6 , OC0B = PD5
+	DDRD |= (1<<6 | 1<<5); 	
 
-	leftDir = FORWARD;
-	rightDir = FORWARD;
+    // enable output pins for 
+    // right motor (OC2A = PB3 , OC2B = PD3)
+    DDRB |= (1<<3);
+    DDRD |= (1<<3);
+
+	TCCR2B |= 1<<CS20; // CPU_FREQ / 1
+
+	leftDir = STOP;
+	rightDir = STOP;
 }
 
-void motor_stop() {
-#ifdef DEBUG
-	uart_print("\r\nmotor stopped");
-#endif
+void motor_left_stop() {
 
     TCCR0B &= ~(1<<CS02|1<<CS01|1<<CS00);
     TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
   
 	PORTD &= ~(1<<5|1<<6);
-
-    car_stopped = 1;
+    
+	leftDir = STOP;
 }
 
-void motor_start() {
-    // phase-correct PWM mode, 0CR0A defines TOP
-    TCCR0A |= 1<<WGM00 | 1<<COM0A1 | 1<<COM0B1;	
-	TCCR0B |= 1<<CS00; // CPU_FREQ / 8
-	car_stopped = 0;
+void motor_left_start(enum direction newDir, uint8_t newDuty ) {
+
+    // left motor (OC0A = PD6 , OC0B = PD5
+	uint8_t pwm = (0xff * newDuty) / 100.0;
+
+#ifdef DEBUG
+	uart_print("\r\nSpeed %: left = ");
+	uart_putdecimal(newDuty);
+	uart_print(" (");	
+	uart_putdecimal(pwm);
+	uart_print(")");		
+#endif	
+  
+    if ( newDir == FORWARD ) { 
+        // 0C0A = pwm , OC0B = 1
+		OCR0A = pwm;					
+		PORTD |=  (1<<5);
+
+        TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
+        TCCR0A |=  (1<<WGM00  | 1<<COM0A1 | 1<<COM0A0 );        		
+    } else { 
+    	// 0C0A (PD6) = 1 , OC0B (PD5) = pwm
+		OCR0B = pwm;
+		PORTD |=  (1<<6);						
+	
+        TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
+        TCCR0A |=  (1<<WGM00  | 1<<COM0B1 | 1<<COM0B0 );  		
+    }
+
+    TCCR0B |= 1<<CS00; // CPU_FREQ / 1	    
+      
+	leftDir = newDir;
 }
 
 void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t newDutyLeft, uint8_t newDutyRight) {
 
-    if ( newLeftDir == STOP || newRightDir == STOP ) {
-    	motor_stop();
-    } else {
-    	if ( car_stopped ) {
-    		motor_start();
-    	}
-    	if ( newLeftDir != leftDir ) {
-	    	if ( newLeftDir == FORWARD ) {
-	    		MOTOR_LEFT_DIR_REG |= MOTOR_LEFT_DIR;
-	    	} else {
-				MOTOR_LEFT_DIR_REG &= ~MOTOR_LEFT_DIR;
-	    	}
-	    	leftDir = newLeftDir;
-    	}
-    	if ( newRightDir != rightDir ) {
-	    	if ( newRightDir == FORWARD ) {
-	    		MOTOR_RIGHT_DIR_REG |= MOTOR_RIGHT_DIR;
-	    	} else {
-				MOTOR_RIGHT_DIR_REG &= ~MOTOR_RIGHT_DIR;
-	    	}    	
-	    	rightDir = newRightDir;
-    	}
-
-    	uint8_t pwm0 = (0xff * newDutyLeft)/100.0;
-    	uint8_t pwm1 = (0xff * newDutyRight)/100.0;    	
-
-		OCR0A = pwm0;
-		OCR0B = pwm1;
-
-#ifdef DEBUG
-	uart_print("\r\nSpeed %: left = ");
-	uart_putdecimal(newDutyLeft);
-	uart_print(" (");	
-	uart_putdecimal(pwm0);
-	uart_print(") , right = ");
-	uart_putdecimal(newDutyRight);	
-	uart_print(" (");		
-	uart_putdecimal(pwm1);	
-	uart_print(")");			
-#endif
-
+	if ( newLeftDir == STOP ) {
+		motor_left_stop();
+	} else {
+		motor_left_start(newLeftDir, newDutyLeft);
 	}
 }
 
@@ -188,17 +180,4 @@ void main() {
  			}
  		}
  	}
-
- 	// while( 1 ) {	
- 	// 	if ( is_moving ) {
- 	// 		PORTC = (PORTC & ~_BV(2)) | _BV(3);
- 	// 		_delay_ms(250);
-  //            PORTC = (PORTC & ~_BV(3)) | _BV(2);			
-  //            _delay_ms(250);
- 	// 	} else {
- 	// 		PORTC = 0;
- 	// 		while ( ! is_moving ) {				
- 	// 		}
- 	// 	}
- 	// }
 }
