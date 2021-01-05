@@ -45,8 +45,6 @@ void motor_init() {
     DDRB |= (1<<3);
     DDRD |= (1<<3);
 
-	TCCR2B |= 1<<CS20; // CPU_FREQ / 1
-
 	leftDir = STOP;
 	rightDir = STOP;
 }
@@ -59,6 +57,17 @@ void motor_left_stop() {
 	PORTD &= ~(1<<5|1<<6);
     
 	leftDir = STOP;
+}
+
+void motor_right_stop() {
+
+    TCCR2B &= ~(1<<CS22|1<<CS21|1<<CS20);
+    TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
+  
+    PORTB &= ~(1<<3);
+    PORTD &= ~(1<<3);
+    
+	rightDir = STOP;
 }
 
 void motor_left_start(enum direction newDir, uint8_t newDuty ) {
@@ -95,13 +104,54 @@ void motor_left_start(enum direction newDir, uint8_t newDuty ) {
 	leftDir = newDir;
 }
 
+void motor_right_start(enum direction newDir, uint8_t newDuty ) {
+
+    // right motor (OC2A = PB3 , OC2B = PD3)
+	uint8_t pwm = (0xff * newDuty) / 100.0;
+
+#ifdef DEBUG
+	uart_print("\r\nSpeed %: right = ");
+	uart_putdecimal(newDuty);
+	uart_print(" (");	
+	uart_putdecimal(pwm);
+	uart_print(")");		
+#endif	
+  
+    if ( newDir == FORWARD ) { 
+        // 0C2A (PB3) = pwm , OC2B (PD3) = 1
+		OCR2A = pwm;					
+		PORTD |=  (1<<3);
+
+        TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
+        TCCR2A |=  (1<<WGM20  | 1<<COM2A1 | 1<<COM2A0 );        		
+    } else { 
+    	// 0C2A (PB3) = 1 , OC2B (PD3) = pwm
+		OCR2B = pwm;
+		PORTB |=  (1<<3);						
+	
+        TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
+        TCCR2A |=  (1<<WGM20  | 1<<COM2B1 | 1<<COM2B0 );  		
+    }
+
+    TCCR2B |= 1<<CS20; // CPU_FREQ / 1	    
+      
+	rightDir = newDir;
+}
+
 void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t newDutyLeft, uint8_t newDutyRight) {
 
+    // TODO: Maybe stop both 8-bit timers if any of the outputs needs to change and 
+    //       start them at the same time ?
 	if ( newLeftDir == STOP ) {
 		motor_left_stop();
 	} else {
 		motor_left_start(newLeftDir, newDutyLeft);
 	}
+	if ( newRightDir == STOP ) {
+		motor_right_stop();
+	} else {
+		motor_right_start(newRightDir, newDutyRight);
+	}	
 }
 
 void main() {
