@@ -1,27 +1,21 @@
-# tvremove-car
-This is a fun little arduino project I build for my 3yo where you control a little 2-wheeled robot using a IR tv remote. A couple years ago I got gifted a more-or-less obscure robotics kit (made by Franzis in 2010) that had been sitting idly on a shelf since then. Since St Nichola's day was coming up and I was looking for a small gift for my son, I came up with the idea to revive this kit and use a spare IR TV remote for controlling it.
+# RC car 
 
-Since I like to find-out stuff all by myself, I didn't use any ready-made Arduino libraries nor Arduino IDE (but I did use some of the include files) but instead relied on make, avr-gcc and sublime text edit.
+This project consists of a very crude "RC car" (some cardboard with 2 wheels plus a ball caster attached) and an equally minimal "RC remote" (Arduino, a 433 Mhz transmitter and 
 
-![car](https://raw.githubusercontent.com/toby1984/tvremote-car/main/screenshot.png)
+Parts list 
 
-Software used
+- 2x Arduino Nano (~3€/pc)
+- 1x 433 Mhz sender module with antenna (PCB has HFY-J1B printed on it, 1.40 €/pc))
+- 1x 433 Mhz receiver module with antenna (RXB6 SuperHet, 2.50 €/pc)
+- 2x helical 433 Mhz antenna ( 0.50€/pc)
+- 2xAA battery holder  (~1€/pc)
+- 4xAA battery holder (~1€/pc)
+- 2x JGA25-370 6V DC motors, 133 RPM, with built-in encoders ( hard to find with encoders, ~11€/pc)
+- 2x wheels, ball caster, 2x shaft coupling, 2x DC motor mounting brackets, screws (I bought a kit that included all of this plus 2 JGA25-370 motors for 15€, didn't use the motors though...)
+- 2x 5V Step-Up/Step-Down converter (Pololu S9V11F5 , 4.79€/pc)
+- 2-axis joystick module ( 3€/pc )
+- DRV8833 module for driving the DC motors (3.00€/pc)
 
-* avr-gcc 
-* Make
-* Sublime Text 3
-* avr-dude
-* minicom (for serial debugging)
+Total cost: A whopping 65€, ouch!
 
-Hardware used
-
-* ISP programmer
-* Franzis robotics kit (no longer sold)
-* spare IR sensor, some resistors, 2 blue LEDs (any project can be improved with the addition of more LEDs)
-* Oscilloscope (for figuring out what protocol my IR was using and debugging the motor control)
-
-Features:
-
-- controlling of two DGS S04NF servos (continuous rotation) using hardware PWM
-- decoding of NEC IR protocol
-- blinking LEDs
+I think you can get this down to around ~40€ (go for cheaper motors without encoders,use no or lower-power step-up/step down converters and find cheap wheels, ball castermshaft couplings+mounting brackets) but given the fact that you can grab RC cars at your local toy store for much less it's obvious that this is never going to compete cost-wise.
