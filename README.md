@@ -4,6 +4,7 @@ This project consists of a very crude "RC car" (some cardboard with 2 wheels plu
 
 Parts list 
 
+- some cardboard as base plate of the car (I had to glue together 2-3 layers to make it stiff enough)
 - 2x Arduino Nano (~3€/pc)
 - 1x 433 Mhz sender module with antenna (PCB has HFY-J1B printed on it, 1.40 €/pc))
 - 1x 433 Mhz receiver module with antenna (RXB6 SuperHet, 2.50 €/pc)
