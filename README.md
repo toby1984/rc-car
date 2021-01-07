@@ -1,6 +1,9 @@
 # RC car 
 
-This project consists of a very crude "RC car" (some cardboard with 2 wheels plus a ball caster attached) and an equally minimal "RC remote" (Arduino, a 433 Mhz transmitter and 
+This project consists of a very crude "RC car" plus a 433 Mhz remote control (both driven by Arduino Nanos).
+
+Since this is a fun project I didn't use any ready-made libraries at all (apart from the AVR libc) and the project builds with old-fashioned 'make' and does not use the Arduino IDE. You'll need a working linux avr-gcc installation and some ISP programmer to upload the firmware.
+
 
 Parts list 
 
