@@ -6,6 +6,10 @@
 
 #define TIMER_PRESCALING_FACTOR ( F_CPU / 1000000 )
 
+// calculate prescaler settings so 
+// timer16 ticks 1.000.000 times per second.
+// With 16 bit resolution this gives us a max. timer
+// value of 0,065535 seconds (65,535 ms)
 #if TIMER_PRESCALING_FACTOR == 1
 #define PRESCALER_BITS _BV(CS10)
 #elif TIMER_PRESCALING_FACTOR == 8

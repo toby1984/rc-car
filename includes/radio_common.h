@@ -13,6 +13,8 @@
 // length of a long pulse in microseconds
 #define LONG_MICROS (SHORT_MICROS*2)
 
+#define RADIO_TIMEOUT_MICROS (LONG_MICROS * 10)
+
 // lo/hi thresholds for short pulses
 #define SHORT_LOW (uint16_t) (SHORT_MICROS * 0.6f)
 #define SHORT_HI (uint16_t) (SHORT_MICROS * 1.4f)

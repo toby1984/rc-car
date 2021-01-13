@@ -1,6 +1,13 @@
 INCLUDE_DIRS = -I/home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include -I../includes
 LIB_DIR = 
 
+
+# See Application Note 3341 "Basic Bootloader for the AVR® MCU DA (AVR-DA) Family"
+# 
+# To change the application's starting address, use the following LINKER options:
+#
+# -Wl,--section-start=.text=0x200
+
 # AVRCC_CHIP=atmega88
 # AVRDUDE_CHIP = m88p
 # CPU_FREQ=8000000

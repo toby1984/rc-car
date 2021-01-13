@@ -47,8 +47,6 @@ int8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
 
     currentBitMask >>= 1;
 
-    // radio_wait_for_edge();
-
     while (1)
     {
         uint16_t tsElapsed2 = radio_wait_for_edge();
