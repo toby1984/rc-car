@@ -12,6 +12,9 @@
 
 void radio_receiver_init(void);
 
-int8_t radio_receive(uint8_t *buffer, uint8_t msgSize);
+// void (*foo)(int);
+typedef uint8_t (*radio_msg_size_calculator)(uint8_t first_byte);
+
+int8_t radio_receive(uint8_t *buffer, radio_msg_size_calculator callback);
 
 #endif

@@ -23,12 +23,13 @@ uint16_t radio_wait_for_edge() {
     return timer16_elapsed();
 }    
 
-int8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
+int8_t radio_receive(uint8_t *buffer,  radio_msg_size_calculator callback)
 {
     uint8_t currentByte = 0;
     uint8_t currentByteIdx = 0;
     uint8_t currentBitMask = 0x80;
     uint8_t currentBit = 0;
+    uint8_t msgSize = 0;
 
     // wait for start bit
     uint16_t elapsed;
@@ -79,6 +80,9 @@ int8_t radio_receive(uint8_t *buffer, uint8_t msgSize)
         if (currentBitMask == 0)
         {
             currentBitMask = 0x80;
+            if ( currentByteIdx == 0 ) {
+                msgSize = callback(currentByte);
+            }
             buffer[currentByteIdx++] = currentByte;
             if (currentByteIdx == msgSize)
             {

@@ -154,6 +154,11 @@ void motor_change(enum direction newLeftDir,enum direction newRightDir, uint8_t 
 	}	
 }
 
+uint8_t msg_size_calculator(uint8_t first_byte) {
+	// TODO: Implement this based on message type, see protocol.h
+	return 3;
+}
+
 void main() {
 
 	uint8_t msg[3];
@@ -172,7 +177,7 @@ void main() {
  #endif	
 
  	while (1) {
- 		int8_t received = radio_receive(&msg[0],3);
+ 		int8_t received = radio_receive(&msg[0],msg_size_calculator);
  		if ( received == 3 && crc8(&msg[0],3) == 0 ) 
  		{
  			uart_print("\r\nreceived : ");
