@@ -3,6 +3,12 @@
 #include "avr/interrupt.h"
 #include "util/twi.h"
 
+#define DEBUG_I2C
+
+#ifdef DEBUG_I2C
+#include "uart.h"
+#endif
+
 static volatile uint8_t data[I2C_BUFFER_SIZE];
 
 static volatile uint8_t bytes_in_buffer;
@@ -56,9 +62,9 @@ void i2c_init(uint8_t myAddress) {
 
     //enable TWI
     TWCR = (1<<TWEN);
+	DDRC |= (1<<4) | (1<<5);
 
 	i2c_become_slave_receiver();
-	// TODO: Enable internal pull-ups on SDA and SCLK pins so we don't need external resistors
 }
 
 static void i2c_disable_read_irq() {
@@ -81,15 +87,24 @@ static void i2c_await() {
 
 uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t len) {
 
+#ifdef DEBUG_I2C		
+		uart_print("\r\ni2c_send_noresponse(): Number of bytes to sent: ");
+		uart_putdecimal(len);
+#endif
+
 	uint8_t bytes_transmitted = 0;
 
 	i2c_disable_read_irq();
 
-  	TWCR = (1<<TWINT)| (1<<TWSTA)|(1<<TWEN); // send START
+  	TWCR = (1<<TWINT)| (1<<TWSTA) | (1<<TWEN); // send START
   	
 	i2c_await();
 	
 	if ( i2c_status() != TW_START) { // check for error
+#ifdef DEBUG_I2C		
+		uart_print("\r\ni2c_send_noresponse(): Failed to send start, error: ");
+		uart_puthex(i2c_status());
+#endif		
 		goto error2;
 	}
 
@@ -100,6 +115,10 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 	i2c_await(); 
 	
 	if ( i2c_status() != TW_MT_SLA_ACK) { // check for errors
+#ifdef DEBUG_I2C		
+		uart_print("\r\ni2c_send_noresponse(): Failed to send SLA+W, error: ");
+		uart_puthex(i2c_status());
+#endif			
 		goto error;
 	}
 
@@ -112,6 +131,10 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 		i2c_await();
 
 		if ( i2c_status() != TW_MT_DATA_ACK) { // check for errors
+#ifdef DEBUG_I2C		
+		uart_print("\r\ni2c_send_noresponse(): Failed to send data, error: ");
+		uart_puthex(i2c_status());
+#endif				
 			break;
 		}
 	}
