@@ -7,11 +7,19 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-#define CENTER_MIN 489
-#define CENTER_MAX 505
-
+#define X_MIN 0.0
+#define X_CENTER 498
 #define X_MAX 1023
+
+#define X_CENTER_MIN (X_CENTER*0.95)
+#define X_CENTER_MAX (X_CENTER*1.05)
+
+#define Y_MIN 0.0
+#define Y_CENTER 495
 #define Y_MAX 1023
+
+#define Y_CENTER_MIN (Y_CENTER*0.95)
+#define Y_CENTER_MAX (Y_CENTER*1.05)
 
 // #define DEBUG_ADC
 
@@ -35,17 +43,17 @@ void joystick_read(joystick_readings *result)
   uart_putdecimal(tmp);
   #endif
 
-  if ( tmp <= CENTER_MIN ) {
-    result->y = ( 100.0*(CENTER_MIN-tmp+1)) / CENTER_MIN;
-  } else if ( tmp >= CENTER_MAX ) {
-    result->y = (-100.0*(tmp-CENTER_MAX) ) / (Y_MAX - CENTER_MAX );
+  if ( tmp <= Y_CENTER_MIN ) {
+    result->y = 100.0*(Y_CENTER_MIN - tmp) / (float) (Y_CENTER_MIN-Y_MIN);
+  } else if ( tmp >= Y_CENTER_MAX ) {
+    result->y = -100.0*(tmp-Y_CENTER_MAX) / (float) (Y_MAX-Y_CENTER_MAX);
   } else {
-    result->y	= 0;
+    result->y = 0;
   }
 
-	ADMUX = (ADMUX & 0b11110000) | 1<<0; // internal voltage reference, MUX01
-	sbi(ADCSRA,ADSC);
-	while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
+  ADMUX = (ADMUX & 0b11110000) | 1<<0; // internal voltage reference, MUX01
+  sbi(ADCSRA,ADSC);
+  while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
 
   tmp = ADC;
   #ifdef DEBUG_ADC
@@ -53,19 +61,19 @@ void joystick_read(joystick_readings *result)
   uart_putdecimal(tmp);
   #endif
 
-  if ( tmp <= CENTER_MIN ) {
-    result->x = ( 100.0*(CENTER_MIN-tmp+1)) / CENTER_MIN;
-  } else if ( tmp >= CENTER_MAX ) {
-    result->x = (-100.0*(tmp-CENTER_MAX) ) / (X_MAX - CENTER_MAX );
+  if ( tmp <= X_CENTER_MIN ) {
+    result->x =  100.0 * (X_CENTER_MIN-tmp) / (float) (X_CENTER_MIN-X_MIN);
+  } else if ( tmp >= X_CENTER_MAX ) {
+    result->x = -(100.0 * (tmp-X_CENTER_MAX) / (float) (X_MAX-X_CENTER_MAX));
   } else {
-    result->x	= 0;
+    result->x = 0;
   }
 
   #ifdef DEBUG_ADC
   uart_print("\r\n result Y = ");
-  uart_putsdecimal(result->y);  
+  uart_putsdecimal(result->y);
   uart_print("     | result X = ");
-  uart_putsdecimal(result->x);   
+  uart_putsdecimal(result->x);
   #endif
 
 }
