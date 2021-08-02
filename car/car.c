@@ -6,8 +6,9 @@
 #include "radio_receiver.h"
 #include "uart.h"
 #include "crc.h"
+#include "watchdog.h"
 
-#define DEBUG
+// #define DEBUG
 
 #define DEBUG_PIN _BV(5) // PB5
 
@@ -22,7 +23,13 @@
 // maximum speed difference (in percent) between both
 // motors while turning and moving forwards / backwards at the same time
 // this ultimately defines how fast you're able to turn when not stationary
-#define MAX_MOTOR_SPEED_DIFF 0.2
+#define MAX_MOTOR_SPEED_DIFF 0.5
+
+// MCU will only be powered as long as
+// POWER_UP_PIN is HIGH
+#define POWER_UP_PIN 0
+#define POWER_UP_DDR DDRB
+#define POWER_UP_PORT PORTB
 
 enum direction {
 	FORWARD,BACKWARD,STOP
@@ -30,6 +37,16 @@ enum direction {
 
 enum direction leftDir;
 enum direction rightDir;
+
+void mcu_power_on() {
+      POWER_UP_DDR |= (1<<POWER_UP_PIN);
+      POWER_UP_PORT |= (1<<POWER_UP_PIN);
+}
+
+void mcu_power_off() {
+      POWER_UP_DDR |= (1<<POWER_UP_PIN);
+      POWER_UP_PORT &= ~(1<<POWER_UP_PIN);
+}
 
 void motor_init() {
 
@@ -159,9 +176,22 @@ uint8_t msg_size_calculator(uint8_t first_byte) {
 	return 3;
 }
 
+int8_t clamp(int8_t input) {
+    return input < -100 ? -100 : input > 100 ? 100 : input;
+}
+
+void watchdog_irq() {
+    mcu_power_off();
+}
+
 void main() {
 
 	uint8_t msg[3];
+
+    // change pin to HIGH as the
+    // very first action here so
+    // MCU stays powered
+    mcu_power_on();
 
  	DDRC |= (1<<2) | (1<<3);
 
@@ -176,29 +206,34 @@ void main() {
  	uart_print("online");
  #endif	
 
+    watchdog_start( watchdog_irq, 120 );
+
  	while (1) {
  		int8_t received = radio_receive(&msg[0],msg_size_calculator);
  		if ( received == 3 && crc8(&msg[0],3) == 0 ) 
  		{
+#ifdef DEBUG
  			uart_print("\r\nreceived : ");
+#endif
  			uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
+
+#ifdef DEBUG
  			uart_puthex( value );
+#endif
 
  			int8_t xDir = msg[0];
  			int8_t yDir = msg[1];
+
+#ifdef DEBUG
  			uart_print("(");
  			uart_putsdecimal(xDir);
  			uart_print("/");
  			uart_putsdecimal(yDir);
  			uart_print(")");
+#endif
 
- 			// TODO: Fix sender to not send values > 100
- 			if ( xDir < -100 ) {
- 				xDir = -100;
- 			}
- 			if ( yDir < -100 ) {
- 				yDir = -100;
- 			}
+			xDir = clamp(xDir);
+			yDir = clamp(yDir);
 
  			if ( yDir == 0 ) {
  				if ( xDir == 0 ) {
@@ -207,21 +242,25 @@ void main() {
  				} else if ( xDir < 0 ) {
  					// turn left in-place (left motor backwards, right motor forwards)
  					motor_change(BACKWARD,FORWARD, -xDir, -xDir );
+                    watchdog_reset();
  				} else {
  					// turn right in-place (left motor forwards, right motor backwards)
  					motor_change(FORWARD,BACKWARD, xDir, xDir ); 					
+                    watchdog_reset();
  				}
  			} else if ( xDir == 0 ) {
  				// yDir != 0 , xDir == 0 
+                watchdog_reset();
  				if ( yDir > 0 ) {
  					// forwards		
-					motor_change(FORWARD,FORWARD, yDir, yDir ); 								
+					motor_change(FORWARD,FORWARD, yDir, yDir );
  				} else {
  					// backwards
 					motor_change(BACKWARD,BACKWARD, -yDir, -yDir );  					
  				}
  			} else {
  				// yDir != 0 , xDir != 0 
+                watchdog_reset();
  				enum direction dir = yDir > 0 ? FORWARD : BACKWARD;
  				if ( xDir < 0 ) {
  					// turn left while driving forward -> left motor must run SLOWER than right motor
@@ -231,7 +270,7 @@ void main() {
  					// turn right while driving forward -> right motor must run SLOWER than left motor
 					float delta = 1.0 - MAX_MOTOR_SPEED_DIFF*(xDir/100.0); 						
 					motor_change(dir, dir, yDir, yDir*delta ); 						
- 				}																
+ 				}
  			}
  		}
  	}
