@@ -21,7 +21,7 @@ all: remote.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 remote.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o ../common/uart.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o ../common/uart.o ../common/i2c.o
 
 remote.hex: remote.elf
 	rm -f remote.hex

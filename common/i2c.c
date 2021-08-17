@@ -42,7 +42,8 @@ To initiate the SR mode, the TWI (Slave) Address Register n (TWARn) and the TWI 
 	TWCR = current;
 }
 
-void i2c_init(uint8_t myAddress) {
+void i2c_init(uint8_t myAddress)
+{
 	TWAR = myAddress & ~(1<<0); // clear LSB as setting it would indicate we want to respond to the "general call" (0x00) I2C address
 
 	dropped_byte_cnt = 0;
@@ -60,11 +61,9 @@ void i2c_init(uint8_t myAddress) {
 #error Unhandled CPU frequency for I2C
 #endif    
 
-    //enable TWI
-    TWCR = (1<<TWEN);
+    //enable TWI output ports
 	DDRC |= (1<<4) | (1<<5);
-
-	i2c_become_slave_receiver();
+	PORTC &= ~(1<<4|1<<5);
 }
 
 static void i2c_disable_read_irq() {
@@ -82,6 +81,9 @@ static uint8_t readByte() {
 }
 
 static void i2c_await() {
+#ifdef DEBUG_I2C
+		uart_print("\r\ni2c_await(): Waiting...");
+#endif
 	while (!(TWCR & (1<<TWINT)));
 }
 
@@ -94,6 +96,10 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 
 	uint8_t bytes_transmitted = 0;
 
+#ifdef DEBUG_I2C
+		uart_print("\r\ni2c_send_noresponse(): About to disable read IRQ ");
+		uart_putdecimal(len);
+#endif
 	i2c_disable_read_irq();
 
   	TWCR = (1<<TWINT)| (1<<TWSTA) | (1<<TWEN); // send START
@@ -108,8 +114,15 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 		goto error2;
 	}
 
+#ifdef DEBUG_I2C
+		uart_print("\r\ni2c_await(): Sending destination address");
+#endif
+
 	// send address + W
-	TWDR = destinationAddress | 1;
+    // LSB is R/W flag
+    // set -> READ
+    // cleared -> WRITE
+	TWDR = destinationAddress & ~(1<<0);
 	TWCR = (1<<TWINT) | (1<<TWEN);
 
 	i2c_await(); 
@@ -143,10 +156,6 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 error:		
 	TWCR = (1<<TWINT)| (1<<TWEN)|(1<<TWSTO); // transmit STOP
 error2:	
-
-	// TODO: If we actually expected data bytes as a reply from the slave we've addressed, we'd need to
-	//       send a REPEAT START and switch to master receiver mode, see AVR documentation
-	i2c_become_slave_receiver();
 	return bytes_transmitted;
 }
 
@@ -161,7 +170,7 @@ uint8_t i2c_receive(uint8_t *buffer, uint8_t len)
 	}
 
 	if ( ( oldSreg & (1<<7) ) != 0 ) { // only enable IRQs if we were the ones disabling them
-		sei();
+        sei();
 	}		
 	return result;
 }
@@ -179,6 +188,9 @@ static void writeByte(uint8_t value)
 
 // interrupt routine for receiving data via TWI
 ISR(TWI_vect) {	
+#ifdef DEBUG_I2C
+		uart_print("\r\ni2c_send_noresponse(): GOT IRQ");
+#endif
 	writeByte(TWDR);
 	TWCR |= (1<<TWINT) | (1<<TWEA); // receive next byte and send ACK				
 }
