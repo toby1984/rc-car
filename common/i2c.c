@@ -9,38 +9,35 @@
 #include "uart.h"
 #endif
 
-static volatile uint8_t data[I2C_BUFFER_SIZE];
+enum i2c_mode {
+        I2C_MODE_IDLE=0,
+        I2C_MODE_SEND,
+        I2C_MODE_RECEIVE
+};
 
-static volatile uint8_t bytes_in_buffer;
-static volatile uint8_t read_offset;
-static volatile uint8_t write_offset;
-static volatile uint8_t dropped_byte_cnt;
+enum i2c_outcome {
+    I2C_SUCCESS = 0,
+    I2C_PENDING,
+    I2C_ERROR
+};
+
+enum i2c_state {
+    I2C_SEND_RECV_ADR,
+    I2C_SEND_FIRST_BYTE,
+    I2C_SEND_NEXT_BYTE,
+}
+
+static volatile i2c_mode i2c_mode;
+static volatile uint8_t *i2c_buffer;
+static volatile uint8_t i2c_bufferSize;
+static volatile uint8_t i2c_offsetInBuffer;
+static volatile i2c_outcome i2c_status;
+static volatile i2c_state i2c_current_state;
 
 #define MT_START 0x08
 #define MT_SLA_ACK 0x18
 
 #define i2c_status() (TWSR & 0xF8)
-
-static void i2c_become_slave_receiver() {
-	uint8_t current = TWCR;	
-
-/*
-Become slave receiver.
-
-To initiate the SR mode, the TWI (Slave) Address Register n (TWARn) and the TWI Control Register n
-(TWCRn) must be initialized as follows:
-1. The upper seven bits of TWARn are the address to which the 2-wire Serial Interface will respond when addressed by a Master (TWARn.TWA[6:0]).
-2. If the LSB of TWARn is written to TWARn.TWGCI=1, the TWIn will respond to the general call address (0x00), otherwise it will ignore the general call address.
-3. TWCRn must hold a value of the type TWCRn=0100010x - TWCRn.
-  * TWEN must be written to '1' to enable the TWI. 
-  * TWEA bit must be written to '1' to enable the acknowledgment of the device’s own slave address or the general call address. 
-   * TWSTA and TWSTO must be written to zero.
-*/	
-
-	current &= (1<<TWSTA) | (1<<TWSTO);
-	current |= (1<<TWIE) | (1<<TWEN) | (1<<TWEA);
-	TWCR = current;
-}
 
 void i2c_init(uint8_t myAddress)
 {
@@ -61,38 +58,34 @@ void i2c_init(uint8_t myAddress)
 #error Unhandled CPU frequency for I2C
 #endif    
 
-    //enable TWI output ports
+    // set TWI ports to output
 	DDRC |= (1<<4) | (1<<5);
 	PORTC &= ~(1<<4|1<<5);
+
+    i2c_mode = I2C_MODE_IDLE;
+    i2c_bufferSize = 0;
+    i2c_offsetInBuffer = 0;
+    i2c_status = I2C_SUCCESS;
 }
 
-static void i2c_disable_read_irq() {
+static void i2c_disable_irq() {
 	TWCR &= ~(1<<TWIE);
 }
 
-static uint8_t readByte() {
-	if ( bytes_in_buffer > 0 ) {
-		uint8_t result = data[read_offset];
-		read_offset = (read_offset+1) % I2C_BUFFER_SIZE;	
-		bytes_in_buffer--;
-		return result;
-	}
-	return 0xff;
+static void i2c_enable_irq() {
+	TWCR |= (1<<TWIE);
 }
 
-static void i2c_await() {
+static void i2c_await()
+{
 #ifdef DEBUG_I2C
 		uart_print("\r\ni2c_await(): Waiting...");
 #endif
 	while (!(TWCR & (1<<TWINT)));
 }
 
-uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t len) {
-
-#ifdef DEBUG_I2C		
-		uart_print("\r\ni2c_send_noresponse(): Number of bytes to sent: ");
-		uart_putdecimal(len);
-#endif
+void i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t len)
+{
 
 	uint8_t bytes_transmitted = 0;
 
@@ -100,63 +93,24 @@ uint8_t i2c_send_noresponse(uint8_t destinationAddress, uint8_t *msg, uint8_t le
 		uart_print("\r\ni2c_send_noresponse(): About to disable read IRQ ");
 		uart_putdecimal(len);
 #endif
-	i2c_disable_read_irq();
 
-  	TWCR = (1<<TWINT)| (1<<TWSTA) | (1<<TWEN); // send START
-  	
-	i2c_await();
-	
-	if ( i2c_status() != TW_START) { // check for error
-#ifdef DEBUG_I2C		
-		uart_print("\r\ni2c_send_noresponse(): Failed to send start, error: ");
-		uart_puthex(i2c_status());
-#endif		
-		goto error2;
-	}
+	i2c_disable_irq();
 
+    if ( i2c_mode != I2C_MODE_IDLE ) {
 #ifdef DEBUG_I2C
-		uart_print("\r\ni2c_await(): Sending destination address");
+		uart_print("\r\ni2c_send_noresponse(): I2C still busy.");
 #endif
+        return;
+    }
+    i2c_buffer = msg;
+    i2c_bufferSize = len;
 
-	// send address + W
-    // LSB is R/W flag
-    // set -> READ
-    // cleared -> WRITE
-	TWDR = destinationAddress & ~(1<<0);
-	TWCR = (1<<TWINT) | (1<<TWEN);
+    i2c_status = I2C_PENDING;
+    i2c_state = I2C_SEND_RECV_ADR;
 
-	i2c_await(); 
-	
-	if ( i2c_status() != TW_MT_SLA_ACK) { // check for errors
-#ifdef DEBUG_I2C		
-		uart_print("\r\ni2c_send_noresponse(): Failed to send SLA+W, error: ");
-		uart_puthex(i2c_status());
-#endif			
-		goto error;
-	}
+    i2c_enable_irq();
 
-	uint8_t remaining = len;
-	for (  ; remaining > 0 ; remaining--) 
-	{		
-		TWDR = *msg++; // load data byte
-		TWCR = (1<<TWINT) | (1<<TWEN);
-
-		i2c_await();
-
-		if ( i2c_status() != TW_MT_DATA_ACK) { // check for errors
-#ifdef DEBUG_I2C		
-		uart_print("\r\ni2c_send_noresponse(): Failed to send data, error: ");
-		uart_puthex(i2c_status());
-#endif				
-			break;
-		}
-	}
-	bytes_transmitted = len - remaining;
-
-error:		
-	TWCR = (1<<TWINT)| (1<<TWEN)|(1<<TWSTO); // transmit STOP
-error2:	
-	return bytes_transmitted;
+  	TWCR = (1<<TWINT)| (1<<TWSTA) | (1<<TWEN); // send START, let IRQ handle response
 }
 
 uint8_t i2c_receive(uint8_t *buffer, uint8_t len) 
@@ -186,11 +140,109 @@ static void writeByte(uint8_t value)
 	write_offset = (write_offset+1) % I2C_BUFFER_SIZE;	
 }
 
-// interrupt routine for receiving data via TWI
-ISR(TWI_vect) {	
 #ifdef DEBUG_I2C
-		uart_print("\r\ni2c_send_noresponse(): GOT IRQ");
+void printError(char *msg) {
+        uart_print("\r\ni2c_error(): ");
+        uart_print( msg );
+        uart_print( " - errno: " );
+        uart_puthex(i2c_status());
+}
 #endif
-	writeByte(TWDR);
-	TWCR |= (1<<TWINT) | (1<<TWEA); // receive next byte and send ACK				
+
+void operationFinished(uint8_t success)
+{
+    i2c_disable_irq();
+    i2c_status = success ? I2C_SUCCESS : I2C_ERROR;
+    i2c_mode = I2C_MODE_IDLE;
+}
+
+void send_next_byte(uint8_t checkForError)
+{
+    if ( checkForError )
+    {
+        if ( i2c_status() != TW_MT_DATA_ACK)
+        {
+#ifdef DEBUG_I2C
+            printError("Failed to send data");
+#endif
+            operationFinished(0);
+            return;
+        }
+    }
+
+    if ( i2c_offsetInBuffer < i2c_bufferSize )
+    {
+        TWDR = i2c_buffer[ i2c_offsetInBuffer++ ];
+        TWCR = (1<<TWINT) | (1<<TWEN);
+        return;
+    }
+
+#ifdef DEBUG_I2C
+    printError("Finished sending data successfully.");
+#endif
+
+    operationFinished(1);
+    return;
+}
+
+// interrupt routine for receiving data via TWI
+ISR(TWI_vect)
+{
+    switch( i2c_mode )
+    {
+        case I2C_MODE_SEND:
+
+            switch( i2c_current_state )
+            {
+                /* START send, check outcome & send SLA+W */
+                case I2C_SEND_RECV_ADR:
+                    if ( i2c_status() != TW_START) {
+#ifdef DEBUG_I2C
+                        printError("Failed to send START");
+#endif
+                        operationFinished(0);
+                        return;
+                    }
+                    i2c_current_state = I2C_SEND_FIRST_BYTE;
+
+                    // send address + W
+                    // LSB is R/W flag
+                    // set -> READ
+                    // cleared -> WRITE
+                    TWDR = destinationAddress & ~(1<<0);
+                    TWCR = (1<<TWINT) | (1<<TWEN);
+                    break;
+
+                /* Send very first byte */
+                case I2C_SEND_FIRST_BYTE:
+
+                    if ( i2c_status() != TW_MT_SLA_ACK) {
+#ifdef DEBUG_I2C
+                        printError("Failed to send SLA+W");
+#endif
+                        operationFinished(0);
+                        return;
+                    }
+
+                    i2c_current_state = I2C_SEND_NEXT_BYTE;
+                    send_next_byte(0); // do not check for error before sending
+                    break;
+                /* Send subsequent bytes */
+                case I2C_SEND_NEXT_BYTE:
+                    send_next_byte(1); // check for error before sending another byte
+                    break;
+            }
+            break;
+        case I2C_MODE_RECEIVE:
+            if ( i2c_status() !=
+            writeByte(TWDR);
+            TWCR |= (1<<TWINT) | (1<<TWEA); // receive next byte and send ACK
+
+            break;
+
+        default:
+#ifdef DEBUG_I2C
+		uart_print("\r\ni2c_send_noresponse(): TWI interrupt while idle ?");
+#endif
+    }
 }
