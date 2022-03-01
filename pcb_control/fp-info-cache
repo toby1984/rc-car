@@ -1,4 +1,4 @@
-19798056085087037
+19798056138241188
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -84478,10 +84478,10 @@ varistor SIOV
 tobi
 drv8833
 
-
+DRV8833 THT throughhole
 0
-0
-0
+12
+12
 tobi
 pololu_5v_updown
 
