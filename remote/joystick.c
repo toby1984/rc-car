@@ -24,18 +24,18 @@
 // #define DEBUG_ADC
 
 void joystick_init(void) {
-	ADMUX = 1<<6; // internal voltage reference, MUX01	
-	ADCSRA |= (1<<7)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); // enable ADC
-	DIDR0 = (1<<0)|(1<<1); // disable digital input buffers on ADC0 and ADC1	
+  ADMUX = 1<<6; // internal voltage reference, MUX01	
+  ADCSRA |= (1<<7)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); // enable ADC
+  DIDR0 = (1<<0)|(1<<1); // disable digital input buffers on ADC0 and ADC1	
 }
 
 void joystick_read(joystick_readings *result) 
 {
-    uint16_t tmp;
+  uint16_t tmp;
 
-	ADMUX &= 0b11110000; // internal voltage reference, MUX00	
-	sbi(ADCSRA,ADSC);
-	while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
+  ADMUX &= 0b11110000; // internal voltage reference, MUX00	
+  sbi(ADCSRA,ADSC);
+  while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
 
   tmp = ADC;
   #ifdef DEBUG_ADC
