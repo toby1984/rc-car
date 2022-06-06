@@ -33,6 +33,7 @@ void joystick_read(joystick_readings *result)
 {
   uint16_t tmp;
 
+  // read ADC0
   ADMUX &= 0b11110000; // internal voltage reference, MUX00	
   sbi(ADCSRA,ADSC);
   while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
@@ -51,6 +52,7 @@ void joystick_read(joystick_readings *result)
     result->y = 0;
   }
 
+  // read ADC1
   ADMUX = (ADMUX & 0b11110000) | 1<<0; // internal voltage reference, MUX01
   sbi(ADCSRA,ADSC);
   while (bit_is_set(ADCSRA, ADSC)); // wait for conversion to finish
