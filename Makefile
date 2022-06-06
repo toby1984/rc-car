@@ -2,9 +2,11 @@
 # AVRDUDE_CHIP = m88p
 # CPU_FREQ=8000000
 
-AVRCC_CHIP=atmega328p
-AVRDUDE_CHIP = m328p
-CPU_FREQ=16000000
+export AVRCC_CHIP=atmega2560
+export AVRDUDE_CHIP=ATmega2560
+export CPU_FREQ=16000000
+
+export AVRDUDE_DEVICE = /dev/ttyACM0
 
 SUBDIRS := common car remote test_receiver
 

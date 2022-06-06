@@ -1,17 +1,13 @@
 INCLUDE_DIRS = -I/home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include -I../includes
 LIB_DIR = 
 
-# AVRCC_CHIP=atmega88
-# AVRDUDE_CHIP = m88p
-# CPU_FREQ=8000000
-
 AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-AVRDUDE_DEVICE = /dev/ttyACM0
+AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = joystick.o remote.o
+OBJECTS = joystick.o remote.o crc.o radio_common.o radio_sender.o uart.o
 
 COMPILE = avr-gcc
 
@@ -21,7 +17,7 @@ all: remote.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 remote.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) ../common/radio_common.o ../common/crc.o ../common/radio_sender.o ../common/uart.o ../common/i2c.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os -Wno-main $(INCLUDE_DIRS) -o remote.elf $(OBJECTS) 
 
 remote.hex: remote.elf
 	rm -f remote.hex

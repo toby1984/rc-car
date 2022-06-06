@@ -1,4 +1,4 @@
-// #define __AVR_ATmega88PB__
+
 #include <avr/io.h>
 #include <stdlib.h>
 #include <util/delay.h>

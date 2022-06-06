@@ -1,15 +1,5 @@
 INCLUDE_DIRS = -I/home/tobi/apps/arduino_ide/./hardware/tools/avr/avr/include -I../includes
 
-# AVRCC_CHIP=atmega88
-# AVRDUDE_CHIP = m88p
-# CPU_FREQ=8000000
-
-AVRCC_CHIP=atmega328p
-AVRDUDE_CHIP = m328p
-CPU_FREQ=16000000
-
-AVRDUDE_DEVICE = /dev/ttyACM0
-
 OBJECTS = test_receiver.o
 
 COMPILE = avr-gcc
