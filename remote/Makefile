@@ -5,7 +5,7 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-AVRDUDE_DEVICE = /dev/ttyACM1
+AVRDUDE_DEVICE = /dev/ttyACM0
 
 OBJECTS = joystick.o remote.o crc.o radio_common.o radio_sender.o uart.o
 
