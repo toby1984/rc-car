@@ -1,4 +1,3 @@
-
 #include <avr/io.h>
 #include <stdlib.h>
 #include <util/delay.h>
@@ -8,7 +7,8 @@
 #include "crc.h"
 #include "watchdog.h"
 
-// #define DEBUG
+#define WATCHDOG_DISABLED
+#define DEBUG
 
 #define DEBUG_PIN _BV(5) // PB5
 
@@ -191,7 +191,7 @@ void main() {
     // change pin to HIGH as the
     // very first action here so
     // MCU stays powered
-    mcu_power_on();
+    // mcu_power_on();
 
  	DDRC |= (1<<2) | (1<<3);
 
@@ -206,7 +206,9 @@ void main() {
  	uart_print("online");
  #endif	
 
+#ifndef WATCHDOG_DISABLED
     watchdog_start( watchdog_irq, 120 );
+#endif
 
  	while (1) {
  		int8_t received = radio_receive(&msg[0],msg_size_calculator);
@@ -242,11 +244,15 @@ void main() {
  				} else if ( xDir < 0 ) {
  					// turn left in-place (left motor backwards, right motor forwards)
  					motor_change(BACKWARD,FORWARD, -xDir, -xDir );
+#ifndef WATCHDOG_DISABLED
                     watchdog_reset();
+#endif
  				} else {
  					// turn right in-place (left motor forwards, right motor backwards)
- 					motor_change(FORWARD,BACKWARD, xDir, xDir ); 					
+ 					motor_change(FORWARD,BACKWARD, xDir, xDir );
+#ifndef WATCHDOG_DISABLED
                     watchdog_reset();
+#endif
  				}
  			} else if ( xDir == 0 ) {
  				// yDir != 0 , xDir == 0 

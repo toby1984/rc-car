@@ -2,9 +2,14 @@
 #include <avr/io.h>
 #include "uart.h"
 
+#define XSTR(x) STR(x)
+#define STR(x) #x
+
 char buffer[10];
 
 void uart_init(void) {
+
+#pragma message "Register is" XSTR( UBRR0H )
 	UBRR0H = UBRRH_VALUE;
 	UBRR0L = UBRRL_VALUE;
 

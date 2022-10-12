@@ -9,6 +9,19 @@ LIB_DIR =
 
 OBJECTS = car.o
 
+ifndef AVRCC_CHIP
+  AVRCC_CHIP=atmega2560
+endif
+ifndef AVRDUDE_CHIP
+  AVRDUDE_CHIP=ATmega2560
+endif
+ifndef CPU_FREQ
+  CPU_FREQ=16000000
+endif
+ifndef AVRDUDE_DEVICE
+  AVRDUDE_DEVICE=/dev/ttyACM0
+endif
+
 COMPILE = avr-gcc
 
 all: car.hex
