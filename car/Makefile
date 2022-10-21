@@ -7,20 +7,12 @@ LIB_DIR =
 #
 # -Wl,--section-start=.text=0x200
 
-OBJECTS = car.o
+OBJECTS = car.o uart.o timer16.o radio_receiver.o crc.o watchdog.o
 
-ifndef AVRCC_CHIP
-  AVRCC_CHIP=atmega2560
-endif
-ifndef AVRDUDE_CHIP
-  AVRDUDE_CHIP=ATmega2560
-endif
-ifndef CPU_FREQ
-  CPU_FREQ=16000000
-endif
-ifndef AVRDUDE_DEVICE
-  AVRDUDE_DEVICE=/dev/ttyACM0
-endif
+AVRCC_CHIP=atmega2560
+AVRDUDE_CHIP=ATmega2560
+CPU_FREQ=16000000
+AVRDUDE_DEVICE=/dev/ttyACM0
 
 COMPILE = avr-gcc
 
@@ -30,7 +22,7 @@ all: car.hex
 	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -Wall -Os -Wno-main $(INCLUDE_DIRS) -c $< -o $@
 
 car.elf: $(OBJECTS)
-	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o car.elf $(OBJECTS) ../common/uart.o ../common/timer16.o ../common/radio_receiver.o ../common/crc.o ../common/watchdog.o
+	$(COMPILE) -DF_CPU=$(CPU_FREQ) -mmcu=$(AVRCC_CHIP) -ffunction-sections -Wl,-gc -Wall -Os $(INCLUDE_DIRS) -o car.elf $(OBJECTS)
 
 car.hex: car.elf
 	rm -f car.hex

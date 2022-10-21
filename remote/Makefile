@@ -28,3 +28,6 @@ clean:
 
 upload: remote.hex
 	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U flash:w:remote.hex
+
+readfuses:
+	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U lfuse:r:-:b

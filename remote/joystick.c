@@ -8,15 +8,15 @@
 #endif
 
 #define X_MIN 0.0
-#define X_CENTER 433
-#define X_MAX 895
+#define X_CENTER 496
+#define X_MAX 1021
 
 #define X_CENTER_MIN (X_CENTER*0.95)
 #define X_CENTER_MAX (X_CENTER*1.05)
 
 #define Y_MIN 0.0
-#define Y_CENTER 433
-#define Y_MAX 895
+#define Y_CENTER 496
+#define Y_MAX 1021
 
 #define Y_CENTER_MIN (Y_CENTER*0.95)
 #define Y_CENTER_MAX (Y_CENTER*1.05)

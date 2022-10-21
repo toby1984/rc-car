@@ -53,14 +53,16 @@ void motor_init() {
     MOTOR_LEFT_DIR_DDR |= MOTOR_LEFT_DIR;
     MOTOR_RIGHT_DIR_DDR |= MOTOR_RIGHT_DIR;
         
-    // enable output pins for 
-    // left motor (OC0A = PD6 , OC0B = PD5
-	DDRD |= (1<<6 | 1<<5); 	
+    // enable output pins for left motor
+    // Atmega2560: (OC0A = PB7, OC0B = PG5)
 
-    // enable output pins for 
-    // right motor (OC2A = PB3 , OC2B = PD3)
-    DDRB |= (1<<3);
-    DDRD |= (1<<3);
+	DDRB |= (1<<7);
+	DDRG |= (1<<5);
+
+    // enable output pins for right motor
+    // Atmega2560: (OC2A = PB4 , OC2B = PH6)
+    DDRB |= (1<<4);
+    DDRH |= (1<<6);
 
 	leftDir = STOP;
 	rightDir = STOP;
@@ -68,21 +70,28 @@ void motor_init() {
 
 void motor_left_stop() {
 
+#ifdef DEBUG
+	uart_print("\r\nMotor left: STOP");
+#endif
     TCCR0B &= ~(1<<CS02|1<<CS01|1<<CS00);
     TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
   
-	PORTD &= ~(1<<5|1<<6);
+	PORTB &= ~(1<<7);
+	PORTG &= ~(1<<5);
     
 	leftDir = STOP;
 }
 
 void motor_right_stop() {
 
+#ifdef DEBUG
+	uart_print("\r\nMotor right: STOP");
+#endif
     TCCR2B &= ~(1<<CS22|1<<CS21|1<<CS20);
     TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
   
-    PORTB &= ~(1<<3);
-    PORTD &= ~(1<<3);
+    PORTB &= ~(1<<4);
+    PORTH &= ~(1<<6);
     
 	rightDir = STOP;
 }
@@ -93,9 +102,11 @@ void motor_left_start(enum direction newDir, uint8_t newDuty ) {
 	uint8_t pwm = (0xff * newDuty) / 100.0;
 
 #ifdef DEBUG
-	uart_print("\r\nSpeed %: left = ");
+	uart_print("\r\nMotor left: direction=");
+	uart_putdecimal(newDir);
+    uart_print(" , duty ");
 	uart_putdecimal(newDuty);
-	uart_print(" (");	
+	uart_print(" (pwm");
 	uart_putdecimal(pwm);
 	uart_print(")");		
 #endif	
@@ -103,14 +114,14 @@ void motor_left_start(enum direction newDir, uint8_t newDuty ) {
     if ( newDir == FORWARD ) { 
         // 0C0A = pwm , OC0B = 1
 		OCR0A = pwm;					
-		PORTD |=  (1<<5);
+		PORTG |=  (1<<5);
 
         TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
         TCCR0A |=  (1<<WGM00  | 1<<COM0A1 | 1<<COM0A0 );        		
     } else { 
-    	// 0C0A (PD6) = 1 , OC0B (PD5) = pwm
+    	// 0C0A = 1 , OC0B = pwm
 		OCR0B = pwm;
-		PORTD |=  (1<<6);						
+		PORTB |=  (1<<7);
 	
         TCCR0A &= ~(1<<COM0A1 | 1<<COM0A0 | 1<<COM0B1 | 1<<COM0B0 );  
         TCCR0A |=  (1<<WGM00  | 1<<COM0B1 | 1<<COM0B0 );  		
@@ -123,28 +134,30 @@ void motor_left_start(enum direction newDir, uint8_t newDuty ) {
 
 void motor_right_start(enum direction newDir, uint8_t newDuty ) {
 
-    // right motor (OC2A = PB3 , OC2B = PD3)
+    // right motor (OC2A , OC2B)
 	uint8_t pwm = (0xff * newDuty) / 100.0;
 
 #ifdef DEBUG
-	uart_print("\r\nSpeed %: right = ");
+	uart_print("\r\nMotor right: direction=");
+	uart_putdecimal(newDir);
+    uart_print(" , duty ");
 	uart_putdecimal(newDuty);
-	uart_print(" (");	
+	uart_print(" (pwm");
 	uart_putdecimal(pwm);
-	uart_print(")");		
-#endif	
+	uart_print(")");
+#endif
   
     if ( newDir == FORWARD ) { 
-        // 0C2A (PB3) = pwm , OC2B (PD3) = 1
+        // 0C2A = pwm , OC2B = 1
 		OCR2A = pwm;					
-		PORTD |=  (1<<3);
+		PORTH |=  (1<<6);
 
         TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
         TCCR2A |=  (1<<WGM20  | 1<<COM2A1 | 1<<COM2A0 );        		
     } else { 
-    	// 0C2A (PB3) = 1 , OC2B (PD3) = pwm
+    	// 0C2A = 1 , OC2B = pwm
 		OCR2B = pwm;
-		PORTB |=  (1<<3);						
+		PORTB |=  (1<<4);
 	
         TCCR2A &= ~(1<<COM2A1 | 1<<COM2A0 | 1<<COM2B1 | 1<<COM2B0 );  
         TCCR2A |=  (1<<WGM20  | 1<<COM2B1 | 1<<COM2B0 );  		
@@ -191,9 +204,9 @@ void main() {
     // change pin to HIGH as the
     // very first action here so
     // MCU stays powered
-    // mcu_power_on();
+    mcu_power_on();
 
- 	DDRC |= (1<<2) | (1<<3);
+ 	DDRC |= (1<<2) | (1<<3); // HMMMM... what's this for ? delete ?
 
   #if defined(DEBUG) || defined(DEBUG_IR)
       uart_init();
@@ -203,7 +216,7 @@ void main() {
  	radio_receiver_init();
 
  #ifdef DEBUG
- 	uart_print("online");
+ 	uart_print("online 2");
  #endif	
 
 #ifndef WATCHDOG_DISABLED
@@ -215,19 +228,15 @@ void main() {
  		if ( received == 3 && crc8(&msg[0],3) == 0 ) 
  		{
 #ifdef DEBUG
- 			uart_print("\r\nreceived : ");
-#endif
- 			uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
-
-#ifdef DEBUG
- 			uart_puthex( value );
+ 			// uint32_t value = (uint32_t) msg[0] << 16 | (uint32_t) msg[1] << 8 | (uint32_t) msg[2];
+ 			// uart_puthex( value );
 #endif
 
  			int8_t xDir = msg[0];
  			int8_t yDir = msg[1];
 
 #ifdef DEBUG
- 			uart_print("(");
+ 			uart_print("\r\n(");
  			uart_putsdecimal(xDir);
  			uart_print("/");
  			uart_putsdecimal(yDir);
