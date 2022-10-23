@@ -27,9 +27,9 @@
 
 // MCU will only be powered as long as
 // POWER_UP_PIN is HIGH
-#define POWER_UP_PIN 0
-#define POWER_UP_DDR DDRB
-#define POWER_UP_PORT PORTB
+#define POWER_UP_PIN 6
+#define POWER_UP_DDR DDRL
+#define POWER_UP_PORT PORTL
 
 enum direction {
 	FORWARD,BACKWARD,STOP
