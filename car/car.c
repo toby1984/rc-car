@@ -7,8 +7,9 @@
 #include "crc.h"
 #include "watchdog.h"
 
-#define WATCHDOG_DISABLED
-#define DEBUG
+#define WATCHDOG_TIMEOUT_SECONDS 30
+// #define WATCHDOG_DISABLED
+// #define DEBUG
 
 #define DEBUG_PIN _BV(5) // PB5
 
@@ -206,7 +207,7 @@ void main() {
     // MCU stays powered
     mcu_power_on();
 
- 	DDRC |= (1<<2) | (1<<3); // HMMMM... what's this for ? delete ?
+ 	// DDRC |= (1<<2) | (1<<3); // HMMMM... what's this for ? delete ?
 
   #if defined(DEBUG) || defined(DEBUG_IR)
       uart_init();
@@ -220,7 +221,7 @@ void main() {
  #endif	
 
 #ifndef WATCHDOG_DISABLED
-    watchdog_start( watchdog_irq, 120 );
+    watchdog_start( watchdog_irq, WATCHDOG_TIMEOUT_SECONDS );
 #endif
 
  	while (1) {
