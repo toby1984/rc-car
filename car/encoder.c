@@ -20,14 +20,9 @@ static volatile encoder_handler encoder_handler_callback;
 
 static uint8_t prescaler_bitmask;
 
-static void enc_reset_counters() {
-
-     // To do a 16-bit write, the high byte must be written before the low byte.
-    TCNT4H = 0;
-    TCNT4L = 0;
-
-    TCNT5H = 0;
-    TCNT5L = 0;
+inline static void enc_reset_counters() {
+    TCNT4 = 0;
+    TCNT5 = 0;
 }
 
 static void enc_stop() {
@@ -37,6 +32,14 @@ static void enc_stop() {
 static void enc_start() {
     TIFR3 |= (1<<OCF1A); // clear overflow marker bit
 	TCCR3B = (TCCR3B & ~( _BV(CS12) | _BV(CS11) | _BV(CS10) ) ) | prescaler_bitmask;
+
+    // setup timers 4 & 5 as counters
+    enc_reset_counters();
+
+    TCCR4B = 0;
+	TCCR4B = (TCCR4B & ~( _BV(CS42) | _BV(CS41) | _BV(CS40) ) ) | 6; // CSn2:0 = 6 -> Trigger on rising edge of Tn
+	TCCR5B = 0;
+	TCCR5B = (TCCR5B & ~( _BV(CS52) | _BV(CS51) | _BV(CS50) ) ) | 6; // CSn2:0 = 6 -> Trigger on rising edge of Tn
 }
 
 uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
@@ -79,12 +82,6 @@ uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
     // enable IRQ on COMPARE A MATCH
     TIMSK3 |= (1<<OCIE3A);
 
-    // setup timers 4 & 5 as counters
-    enc_reset_counters();
-
-	TCCR4B = (TCCR4B & ~( _BV(CS42) | _BV(CS41) | _BV(CS40) ) ) | 7; // CSn2:0 = 6 -> Trigger on rising edge of Tn
-	TCCR5B = (TCCR5B & ~( _BV(CS52) | _BV(CS51) | _BV(CS50) ) ) | 7; // CSn2:0 = 6 -> Trigger on rising edge of Tn
-
     // enable interrupts
     enc_start();
     sei();
@@ -94,24 +91,15 @@ uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
 
 ISR(TIMER3_COMPA_vect)
 {
-    // For a 16-bit read, the low byte must be read before the high byte.
-    uint8_t left_low = TCNT4L;
-    uint8_t left_hi = TCNT4H;
-
-    uint8_t right_low = TCNT4L;
-    uint8_t right_hi = TCNT4H;
+    uint16_t left = TCNT4;
+    uint16_t right = TCNT5;
 
     enc_reset_counters();
-    encoder_handler_callback(left_hi<<8 | left_low, right_hi<<8 | right_low);
+    encoder_handler_callback( left, right );
 }
 
 void enc_reset()
 {
     enc_stop();
-     // To do a 16-bit write, the high byte must be written before the low byte.
-    TCNT3H = 0;
-    TCNT3L = 0;
-
-    enc_reset_counters();
     enc_start();
 }
