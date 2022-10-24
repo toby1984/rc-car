@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include "avr/interrupt.h"
 #include "avr/io.h"
+#include "uart.h"
 
+#define DEBUG
 /*
  * TIMER USAGE:
  *
@@ -28,6 +30,15 @@ static void enc_reset_counters() {
     TCNT5L = 0;
 }
 
+static void enc_stop() {
+	TCCR3B &= ~( _BV(CS12) | _BV(CS11) | _BV(CS10) );
+}
+
+static void enc_start() {
+    TIFR3 |= (1<<OCF1A); // clear overflow marker bit
+	TCCR3B = (TCCR3B & ~( _BV(CS12) | _BV(CS11) | _BV(CS10) ) ) | prescaler_bitmask;
+}
+
 uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
 {
     // calculate 16-bit timer TOP value and PRESCALER
@@ -35,14 +46,27 @@ uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
 
     uint16_t available_opts[5] = {1,8,64,256,1024};
     uint8_t prescaler_idx = 0;
-    uint32_t top = (samplingIntervalMillis/1000.0f) * ( F_CPU / available_opts[ prescaler_idx ]);
+    uint32_t top = (samplingIntervalMillis/1000.0f) * ( (float) F_CPU / available_opts[ prescaler_idx ]);
     while ( top > 65535 && prescaler_idx < 4 ) {
         prescaler_idx++;
-        top = (samplingIntervalMillis/1000.0f) * ( F_CPU / available_opts[ prescaler_idx] );
+        top = (samplingIntervalMillis/1000.0f) * ( (float) F_CPU / available_opts[ prescaler_idx] );
     }
+
+#ifdef DEBUG
+ 	uart_print("\r\nTOP: ");
+  	uart_putdecimal( top );
+    uart_print("\r\n");
+ #endif
+
     if ( top > 65535 ) {
         return 1;
     }
+
+#ifdef DEBUG
+ 	uart_print("\r\nPRESCALER 2: ");
+ 	uart_putdecimal(available_opts[prescaler_idx]);
+ #endif
+
     prescaler_bitmask = 1 + prescaler_idx;
 
     cli();
@@ -62,6 +86,7 @@ uint8_t enc_init(float samplingIntervalMillis, encoder_handler callback)
 	TCCR5B = (TCCR5B & ~( _BV(CS52) | _BV(CS51) | _BV(CS50) ) ) | 7; // CSn2:0 = 6 -> Trigger on rising edge of Tn
 
     // enable interrupts
+    enc_start();
     sei();
 
     return 0; // success
@@ -78,15 +103,6 @@ ISR(TIMER3_COMPA_vect)
 
     enc_reset_counters();
     encoder_handler_callback(left_hi<<8 | left_low, right_hi<<8 | right_low);
-}
-
-static void enc_stop() {
-	TCCR3B &= ~( _BV(CS12) | _BV(CS11) | _BV(CS10) );
-}
-
-static void enc_start() {
-    TIFR3 |= (1<<OCF1A); // clear overflow marker bit
-	TCCR3B = (TCCR3B & ~( _BV(CS12) | _BV(CS11) | _BV(CS10) ) ) | prescaler_bitmask;
 }
 
 void enc_reset()

@@ -11,7 +11,7 @@
 
 #define WATCHDOG_TIMEOUT_SECONDS 30
 #define WATCHDOG_DISABLED
-// #define DEBUG
+#define DEBUG
 
 #define DEBUG_PIN _BV(5) // PB5
 
