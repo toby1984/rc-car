@@ -3,3 +3,4 @@
 *.o
 *.elf
 *.hex
+pcb_control/power-backups

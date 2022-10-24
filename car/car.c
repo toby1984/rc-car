@@ -6,9 +6,11 @@
 #include "uart.h"
 #include "crc.h"
 #include "watchdog.h"
+#include "pid.h"
+#include "encoder.h"
 
 #define WATCHDOG_TIMEOUT_SECONDS 30
-// #define WATCHDOG_DISABLED
+#define WATCHDOG_DISABLED
 // #define DEBUG
 
 #define DEBUG_PIN _BV(5) // PB5
@@ -39,6 +41,9 @@ enum direction {
 enum direction leftDir;
 enum direction rightDir;
 
+pid_data left_motor_pid;
+pid_data right_motor_pid;
+
 void mcu_power_on() {
       POWER_UP_DDR |= (1<<POWER_UP_PIN);
       POWER_UP_PORT |= (1<<POWER_UP_PIN);
@@ -50,6 +55,17 @@ void mcu_power_off() {
 }
 
 void motor_init() {
+
+    // initialize PID controllers
+    pid_init(&left_motor_pid,0,0,0);
+    pid_init(&right_motor_pid,0,0,0);
+
+    // setup two timers for counting motor encoder
+    // events.
+    // 8 bit counters are enough since the motors & voltages I'm using
+    // yields at most ~1300 ticks per second and
+    // I'm going to update the PID controllers with the current tick rate
+    // every 25 ms so I expected at most 1300 / (1000ms / 25ms) => ~33 ticks per sample
 
     MOTOR_LEFT_DIR_DDR |= MOTOR_LEFT_DIR;
     MOTOR_RIGHT_DIR_DDR |= MOTOR_RIGHT_DIR;
@@ -198,6 +214,17 @@ void watchdog_irq() {
     mcu_power_off();
 }
 
+// careful, this is an interrupt handler...
+void encoder_callback(uint16_t ticksLeftMotor, uint16_t ticksRightMotor) {
+ #ifdef DEBUG
+ 	uart_print("\r\n*** Encoders left/right: ");
+    uart_putdecimal( ticksLeftMotor );
+ 	uart_print("/ ");
+    uart_putdecimal( ticksRightMotor );
+ 	uart_print("\r\n");
+ #endif
+}
+
 void main() {
 
 	uint8_t msg[3];
@@ -207,7 +234,7 @@ void main() {
     // MCU stays powered
     mcu_power_on();
 
- 	// DDRC |= (1<<2) | (1<<3); // HMMMM... what's this for ? delete ?
+ 	DDRC |= (1<<2) | (1<<3); // HMMMM... what's this for ? delete ?
 
   #if defined(DEBUG) || defined(DEBUG_IR)
       uart_init();
@@ -215,6 +242,8 @@ void main() {
 
  	motor_init();
  	radio_receiver_init();
+
+    enc_init(1000, &encoder_callback);
 
  #ifdef DEBUG
  	uart_print("online 2");
@@ -225,6 +254,8 @@ void main() {
 #endif
 
  	while (1) {
+        msg[0]=0;
+        msg[1]=0;
  		int8_t received = radio_receive(&msg[0],msg_size_calculator);
  		if ( received == 3 && crc8(&msg[0],3) == 0 ) 
  		{

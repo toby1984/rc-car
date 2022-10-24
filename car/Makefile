@@ -7,7 +7,7 @@ LIB_DIR =
 #
 # -Wl,--section-start=.text=0x200
 
-OBJECTS = car.o uart.o timer16.o radio_receiver.o crc.o watchdog.o
+OBJECTS = car.o uart.o timer16.o radio_receiver.o crc.o watchdog.o pid.o encoder.o
 
 AVRCC_CHIP=atmega2560
 AVRDUDE_CHIP=ATmega2560

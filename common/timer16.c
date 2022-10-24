@@ -2,7 +2,7 @@
 #include "avr/interrupt.h"
 #include "avr/io.h"
 
-static void (*irq_func)(void);
+static volatile void (*irq_func)(void);
 
 void timer16_set_overflow(uint16_t value,void (*irq_callback)(void)) {
 
