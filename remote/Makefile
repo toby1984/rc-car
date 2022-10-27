@@ -5,9 +5,9 @@ AVRCC_CHIP=atmega328p
 AVRDUDE_CHIP = m328p
 CPU_FREQ=16000000
 
-AVRDUDE_DEVICE = /dev/ttyACM0
+AVRDUDE_DEVICE = /dev/ttyACM1
 
-OBJECTS = joystick.o remote.o crc.o radio_common.o radio_sender.o uart.o
+OBJECTS = joystick.o remote.o crc.o radio_common.o radio_sender.o uart.o spi.o si4432.o
 
 COMPILE = avr-gcc
 
@@ -31,3 +31,7 @@ upload: remote.hex
 
 readfuses:
 	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U lfuse:r:-:b
+
+# write atmega328p fuses to use 8 Mhz internal oscillator
+writefuses:
+	/usr/bin/avrdude -F -V -c stk500v2 -p $(AVRDUDE_CHIP) -P $(AVRDUDE_DEVICE) -b 115200 -U lfuse:w:0xff:m -U hfuse:w:0xda:m -U efuse:w:0xfd:m

@@ -1,10 +1,10 @@
 #include "joystick.h"
-#include "radio_sender.h"
 #include "crc.h"
 #include "util/delay.h"
 #include <avr/io.h>
 #include "uart.h"
-// #include "i2c.h"
+#include "spi.h"
+#include "si4432.h"
 
 void main(void) 
 {
@@ -13,32 +13,34 @@ void main(void)
 
     joystick_init();
     uart_init();
-    radio_sender_init();
 
-    // TODO: Remove i2c test code once done !!
-#warning "Remove I2C test loop when done !!!"
+    uart_print("\r\nReady\r\n");
+    spi_master_init();
 
-//    // LSB (bit 0) is used as a R/W indicator.
-//    // bit 0 set   -> READ
-//    // bit 0 clear -> WRITE
-//    uint8_t myAddr = 0b10011100;
-//    uint8_t dstAddr = 0b1010100;
-//
-//    i2c_init(myAddr); // 7-bit address
-//
-//    msg[0] = 0x01;
-//    msg[1] = 0x02;
-//    msg[2] = 0x03;
-//
-//    while ( 1 ) {
-//        uart_print("\r\n=== sending msg\r\n");
-//        i2c_send_noresponse(dstAddr,&msg[0],3);
-//		_delay_ms(500);
-//    }
-//    // TODO: End i2c test code
+   _delay_us(2000);
 
-	while(1)
-    {
+    spi_write_register(0x07, 0x80); // write to Operating & Function Control1 register
+
+   _delay_us(2000);
+//
+//     uint8_t deviceType = si4432_get_device_type();
+//     uint8_t deviceVersion = si4432_get_device_version();
+//
+//     uart_print("\r\nDevice type: ");
+//     uart_putdecimal( deviceType );
+//     uart_print("\r\nDevice Version: ");
+//     uart_putdecimal( deviceVersion);
+
+	while(1) {
+
+        for (uint8_t w = 0 ; w <= 255; w++) {
+            spi_write_register(0x01, w);
+            _delay_us(500);
+        }
+
+//         deviceType = si4432_get_device_type();
+//         deviceVersion = si4432_get_device_version();
+/*
 		joystick_read(&reading);
 
 		msg[0] = reading.x;
@@ -52,8 +54,9 @@ void main(void)
         uart_print("\r\n");
         uart_putdecimal(msg[2]);
         uart_print("\r\n");
-		radio_send(&msg[0],3);
-		_delay_ms(250);		
+		radio_send(&msg[0]
+		,3);
+		_delay_ms(250);	*/
 
 	}
 }
